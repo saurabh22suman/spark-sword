@@ -1,0 +1,1 @@
+export { BeforeAfterComparison } from './BeforeAfterComparison';
