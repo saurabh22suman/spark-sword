@@ -17,7 +17,7 @@ export function AppHeader() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 text-white font-bold">
             <span className="text-xl">⚔️</span>
-            <span>Spark-Sword</span>
+            <span>PrepRabbit</span>
           </Link>
 
           {/* Navigation */}

@@ -1,5 +1,5 @@
 {
-  "name": "spark-sword-frontend",
+  "name": "preprabbit-spark-frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,11 +11,16 @@
     "test:ui": "playwright test --ui"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "d3": "^7.9.0",
+    "framer-motion": "^12.24.11",
+    "lucide-react": "^0.562.0",
     "next": "^14.2.0",
+    "next-themes": "^0.4.6",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "reactflow": "^11.11.0",
+    "tailwind-merge": "^3.4.0",
     "vega-embed": "^6.25.0",
     "vega-lite": "^5.18.0"
   },

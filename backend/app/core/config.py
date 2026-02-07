@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Application settings."""
 
-    app_name: str = "Spark-Sword"
+    app_name: str = "PrepRabbit"
     debug: bool = False
     
     # DuckDB settings

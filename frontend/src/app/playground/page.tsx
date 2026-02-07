@@ -1,29 +1,57 @@
-import { PlaygroundV3 } from '@/components/playground';
+'use client';
+
+import { PlaygroundV3Revamp } from '@/components/playground';
+import { ScenarioBridgeProvider } from '@/components/playground/ScenarioBridge';
 import Link from 'next/link';
+import { LearningModeToggle } from '@/components/learning';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+import { PageContainer, PageHeader } from '@/components/ui';
+
+function PlaygroundContent() {
+  const searchParams = useSearchParams();
+  const scenarioId = searchParams.get('scenario');
+  
+  return (
+    <PageContainer>
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <Link href={scenarioId ? "/scenarios" : "/"} className="text-sm text-slate-600 hover:text-blue-600 dark:text-slate-500 dark:hover:text-slate-400">
+            ← {scenarioId ? 'Back to Scenarios' : 'Back'}
+          </Link>
+          <LearningModeToggle />
+        </div>
+        <PageHeader
+          title="DataFrame Shape Playground"
+          description={
+            scenarioId 
+              ? 'Explore this scenario by adjusting the data shape and observing how Spark reacts.'
+              : 'Develop intuition for how Spark reacts to data shape and operations. Build operation chains, predict Spark\'s decisions, and understand trade-offs.'
+          }
+          className="mb-0"
+        />
+      </div>
+
+      {/* Playground v3 Revamp with Scenario Bridge */}
+      <ScenarioBridgeProvider>
+        <PlaygroundV3Revamp initialScenario={scenarioId || undefined} />
+      </ScenarioBridgeProvider>
+    </PageContainer>
+  );
+}
 
 export default function PlaygroundPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <Link href="/" className="text-sm text-slate-500 hover:text-slate-400 mb-2 inline-block">
-            ← Back
-          </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">DataFrame Shape Playground</h1>
-          <p className="text-slate-400 max-w-3xl">
-            Develop intuition for how Spark reacts to data shape and operations. 
-            Build operation chains, see the execution DAG, and understand trade-offs.
-          </p>
-          <p className="text-sm text-slate-500 mt-2">
-            ⚡ <span className="text-yellow-400">Everything is simulation</span> — no actual Spark execution. 
-            Results are estimates based on typical Spark behavior.
-          </p>
+    <Suspense fallback={
+      <PageContainer>
+        <div className="animate-pulse">
+          <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded mb-4" />
+          <div className="h-4 w-96 bg-slate-200 dark:bg-slate-800 rounded" />
         </div>
-
-        {/* Playground v3 */}
-        <PlaygroundV3 />
-      </div>
-    </main>
+      </PageContainer>
+    }>
+      <PlaygroundContent />
+    </Suspense>
   );
 }

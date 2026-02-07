@@ -10,7 +10,9 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Upload, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type UploadState = 'idle' | 'uploading' | 'analyzing' | 'error';
 type FileType = 'event-log' | 'notebook';
@@ -43,8 +45,8 @@ export default function UploadPage() {
   const [error, setError] = useState<UploadError | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [fileType, setFileType] = useState<FileType | null>(null);
-
+  // File type detection is done inline, we just use local variable
+  
   const handleUpload = useCallback(async (file: File) => {
     setFileName(file.name);
     setError(null);
@@ -61,7 +63,6 @@ export default function UploadPage() {
       setUploadState('error');
       return;
     }
-    setFileType(detectedType);
 
     // Validate file size (max 100MB)
     if (file.size > 100 * 1024 * 1024) {
@@ -110,14 +111,17 @@ export default function UploadPage() {
 
       const result = await response.json();
       
-      // Store result in sessionStorage and redirect appropriately
-      if (detectedType === 'notebook') {
-        sessionStorage.setItem('inferredIntent', JSON.stringify(result));
-        router.push('/intent');
-      } else {
-        sessionStorage.setItem('analysisResult', JSON.stringify(result));
-        router.push('/analysis');
-      }
+      // Artificial delay for UX
+      setTimeout(() => {
+        if (detectedType === 'notebook') {
+          sessionStorage.setItem('inferredIntent', JSON.stringify(result));
+          router.push('/intent');
+        } else {
+          sessionStorage.setItem('analysisResult', JSON.stringify(result));
+          router.push('/analysis');
+        }
+      }, 800);
+
     } catch (err) {
       clearInterval(progressInterval);
       setError({
@@ -160,160 +164,170 @@ export default function UploadPage() {
     setError(null);
     setProgress(0);
     setFileName(null);
-    setFileType(null);
   }, []);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <div className="container mx-auto px-4 py-12">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <Link href="/" className="inline-block mb-6">
-            <h1 className="text-3xl font-bold">
-              <span className="text-orange-500">Spark</span>
-              <span className="text-yellow-500">-Sword</span>
-            </h1>
-          </Link>
-          <h2 className="text-2xl font-semibold text-white mb-2">
-            Upload Spark Files
-          </h2>
-          <p className="text-slate-400 max-w-lg mx-auto">
-            Upload event logs to analyze past executions, or notebooks to 
-            extract intent and explore hypothetical scenarios.
-          </p>
-        </div>
+    <div className="flex flex-col min-h-screen pt-24 pb-12 px-4 md:px-8 max-w-5xl mx-auto w-full">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center mb-12"
+      >
+        <h1 className="text-4xl font-bold mb-4">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+            Upload Artifacts
+          </span>
+        </h1>
+        <p className="text-slate-600 dark:text-slate-300 text-lg max-w-2xl mx-auto">
+          Drop your Spark event logs to visualize execution, or upload a notebook to extract intent.
+        </p>
+      </motion.div>
 
-        {/* Upload Area */}
-        <div className="max-w-2xl mx-auto">
-          {uploadState === 'idle' && (
-            <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onClick={() => fileInputRef.current?.click()}
-              className={`
-                p-12 border-2 border-dashed rounded-xl cursor-pointer
-                transition-all duration-200 text-center
-                ${isDragOver
-                  ? 'border-blue-500 bg-blue-500/10'
-                  : 'border-slate-700 bg-slate-900/50 hover:border-slate-600'}
-              `}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json,.txt,.log,.ipynb,.py"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              
-              <div className="text-5xl mb-4">📁</div>
-              <p className="text-lg text-white mb-2">
-                Drop your file here
-              </p>
-              <p className="text-sm text-slate-400 mb-4">
-                or click to browse
-              </p>
-              
-              {/* File types info */}
-              <div className="space-y-3 mb-4">
-                <div>
-                  <p className="text-xs text-slate-400 mb-1">Event Logs (analyze past runs)</p>
-                  <div className="flex flex-wrap justify-center gap-2 text-xs text-slate-500">
-                    <span className="px-2 py-1 bg-slate-800 rounded">.json</span>
-                    <span className="px-2 py-1 bg-slate-800 rounded">.txt</span>
-                    <span className="px-2 py-1 bg-slate-800 rounded">.log</span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 mb-1">Notebooks (extract intent)</p>
-                  <div className="flex flex-wrap justify-center gap-2 text-xs text-slate-500">
-                    <span className="px-2 py-1 bg-purple-900/50 border border-purple-700/50 rounded">.ipynb</span>
-                    <span className="px-2 py-1 bg-purple-900/50 border border-purple-700/50 rounded">.py</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="text-xs text-slate-500">
-                Max 100MB
-              </div>
-            </div>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.1 }}
+        className="w-full max-w-3xl mx-auto"
+      >
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => uploadState !== 'uploading' && uploadState !== 'analyzing' && fileInputRef.current?.click()}
+          className={cn(
+            "relative group border-2 border-dashed rounded-3xl p-12 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden",
+            isDragOver 
+              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/10 scale-[1.02]" 
+              : "border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-slate-400 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800",
+            (uploadState === 'uploading' || uploadState === 'analyzing') && "pointer-events-none opacity-90"
           )}
+        >
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept=".json,.log,.txt,.ipynb,.py"
+            onChange={handleFileSelect}
+          />
 
-          {(uploadState === 'uploading' || uploadState === 'analyzing') && (
-            <div className="p-12 bg-slate-900/50 border border-slate-700 rounded-xl text-center">
-              <div className="text-5xl mb-4 animate-pulse">
-                {uploadState === 'uploading' ? '⬆️' : (fileType === 'notebook' ? '🔍' : '📊')}
-              </div>
-              <p className="text-lg text-white mb-2">
-                {uploadState === 'uploading' 
-                  ? 'Uploading...' 
-                  : (fileType === 'notebook' 
-                      ? 'Extracting intent...' 
-                      : 'Analyzing execution...')}
-              </p>
-              {fileName && (
-                <p className="text-sm text-slate-400 mb-4">{fileName}</p>
+          <div className="flex flex-col items-center justify-center space-y-4 text-center">
+            
+            <AnimatePresence mode="wait">
+              {uploadState === 'idle' || uploadState === 'error' ? (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="flex flex-col items-center"
+                >
+                  <div className={cn(
+                    "p-6 rounded-full mb-4 transition-colors",
+                    isDragOver ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600" : "bg-white dark:bg-slate-700 shadow-sm text-slate-400 group-hover:text-blue-500 group-hover:scale-110 duration-300"
+                  )}>
+                    <Upload className="w-10 h-10" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                    Click to upload or drag and drop
+                  </h3>
+                  <p className="text-slate-500 dark:text-slate-400 mt-2">
+                    Spark Logs (.json, .log) or Notebooks (.ipynb)
+                  </p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-4 font-mono">
+                    Max file size: 100MB
+                  </p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="flex flex-col items-center w-full max-w-sm"
+                >
+                  {uploadState === 'analyzing' ? (
+                     <div className="p-6 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 mb-6 animate-pulse">
+                        <CheckCircle className="w-10 h-10" />
+                     </div>
+                  ) : (
+                      <div className="p-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 mb-6 animate-spin">
+                        <Loader2 className="w-10 h-10" />
+                      </div>
+                  )}
+                  
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                    {uploadState === 'uploading' ? 'Uploading...' : 'Analyzing Artifact...'}
+                  </h3>
+                  
+                  <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-4">
+                    <motion.div 
+                      className="h-full bg-blue-600"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress}%` }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </div>
+                  <p className="text-sm font-mono text-slate-500 mt-2">{fileName}</p>
+                </motion.div>
               )}
-              
-              {/* Progress bar */}
-              <div className="w-full max-w-sm mx-auto bg-slate-800 rounded-full h-2 overflow-hidden">
-                <div
-                  className="bg-blue-500 h-2 transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <p className="text-xs text-slate-500 mt-2">{progress}%</p>
-            </div>
-          )}
-
-          {uploadState === 'error' && error && (
-            <div className="p-12 bg-slate-900/50 border border-red-500/50 rounded-xl text-center">
-              <div className="text-5xl mb-4">❌</div>
-              <p className="text-lg text-red-400 mb-2">{error.title}</p>
-              <p className="text-sm text-slate-400 mb-6">{error.detail}</p>
-              <button
-                onClick={handleRetry}
-                className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Help Section */}
-        <div className="max-w-2xl mx-auto mt-12">
-          <h3 className="text-lg font-semibold text-white mb-4">
-            Where to find event logs
-          </h3>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="p-4 bg-slate-800/50 rounded-lg">
-              <h4 className="text-sm font-medium text-orange-400 mb-2">
-                Databricks
-              </h4>
-              <p className="text-xs text-slate-400">
-                Cluster UI → Spark UI → Event Log tab → Download
-              </p>
-            </div>
-            <div className="p-4 bg-slate-800/50 rounded-lg">
-              <h4 className="text-sm font-medium text-orange-400 mb-2">
-                Local Spark
-              </h4>
-              <p className="text-xs text-slate-400">
-                Set <code className="text-slate-300">spark.eventLog.enabled=true</code> and check <code className="text-slate-300">spark.eventLog.dir</code>
-              </p>
-            </div>
+            </AnimatePresence>
+            
           </div>
         </div>
 
-        {/* Data Privacy */}
-        <div className="max-w-2xl mx-auto mt-8 text-center">
-          <p className="text-xs text-slate-500">
-            🔒 Your data stays private. Event logs are processed locally and never stored on our servers.
+        {/* Error Display */}
+        <AnimatePresence>
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-6 p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/20 rounded-xl flex items-start gap-3"
+            >
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+              <div>
+                <h4 className="font-semibold text-red-900 dark:text-red-300">{error.title}</h4>
+                <p className="text-sm text-red-700 dark:text-red-400/80">{error.detail}</p>
+              </div>
+              <button
+                onClick={handleRetry}
+                className="ml-auto text-xs text-red-600 dark:text-red-400 font-semibold hover:underline"
+              >
+                Retry
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Info Grid */}
+        <div className="grid md:grid-cols-2 gap-6 mt-12">
+            <div className="p-6 bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                 <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Databricks Logs</h4>
+                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
+                    Download from <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">Spark UI &gt; Event Log</span>.
+                 </p>
+                 <div className="flex gap-2">
+                    <span className="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500">.json</span>
+                    <span className="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500">.zip</span>
+                 </div>
+            </div>
+            <div className="p-6 bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                 <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Intent Detection</h4>
+                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
+                    Upload a notebook to extract its structural shape and simulate optimization.
+                 </p>
+                 <div className="flex gap-2">
+                    <span className="text-xs font-mono bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 px-2 py-1 rounded">.ipynb</span>
+                    <span className="text-xs font-mono bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 px-2 py-1 rounded">.py</span>
+                 </div>
+            </div>
+        </div>
+
+        {/* Privacy Notice */}
+        <div className="mt-8 text-center">
+          <p className="text-xs text-slate-400 dark:text-slate-500">
+            🔒 Files are processed locally where possible and are discarded after your session.
           </p>
         </div>
-      </div>
-    </main>
+      </motion.div>
+    </div>
   );
 }

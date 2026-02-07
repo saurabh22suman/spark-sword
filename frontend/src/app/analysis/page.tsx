@@ -10,11 +10,31 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  ArrowLeft, 
+  BarChart2, 
+  Code2, 
+  Cpu, 
+  FileText, 
+  Layers, 
+  Layout, 
+  Lightbulb, 
+  Zap,
+  Activity,
+  AlertTriangle,
+  Clock,
+  Database,
+  Server
+} from 'lucide-react';
+
 import { DAGVisualization } from '@/components/dag';
 import { InsightsPanel } from '@/components/insights';
 import { CodeMappingPanel, type TransformationMapping } from '@/components/codemapping';
 import { BeforeAfterComparison } from '@/components/comparison';
 import { StageTimeline, type StageTimelineData } from '@/components/timeline';
+import { Card, CardContent, IconBox } from '@/components/ui';
+import { cn } from '@/lib/utils';
 import type { DAGData, OptimizationInsight, StageExplanation } from '@/types';
 
 interface AnalysisResult {
@@ -37,20 +57,41 @@ interface AnalysisResult {
 
 type ViewMode = 'dag' | 'code' | 'insights' | 'compare' | 'metrics';
 
-function MetricCard({ label, value, unit, warning }: { 
+function MetricCard({ label, value, unit, warning, icon: Icon }: { 
   label: string; 
   value: string | number; 
   unit?: string;
   warning?: boolean;
+  icon?: React.ElementType;
 }) {
   return (
-    <div className={`p-4 bg-slate-800/50 rounded-lg border ${warning ? 'border-yellow-500/50' : 'border-slate-700'}`}>
-      <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">{label}</div>
-      <div className={`text-xl font-semibold ${warning ? 'text-yellow-400' : 'text-white'}`}>
-        {value}
-        {unit && <span className="text-sm text-slate-400 ml-1">{unit}</span>}
-      </div>
-    </div>
+    <Card 
+      hover
+      variant={warning ? "bordered" : "default"}
+      className={cn(
+        warning && "border-yellow-500/50 bg-yellow-500/5"
+      )}
+    >
+      <CardContent>
+        <div className="flex items-start justify-between mb-2">
+          <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">{label}</div>
+          {Icon && (
+            <IconBox 
+              icon={Icon as React.ElementType} 
+              variant={warning ? "amber" : "blue"} 
+              size="sm"
+            />
+          )}
+        </div>
+        <div className={cn(
+          "text-2xl font-bold tracking-tight",
+          warning ? "text-yellow-500" : "text-foreground"
+        )}>
+          {value}
+          {unit && <span className="text-sm text-muted-foreground ml-1 font-normal">{unit}</span>}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -114,60 +155,96 @@ export default function AnalysisPage() {
 
   if (!result) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-slate-400">Loading analysis...</div>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="text-muted-foreground animate-pulse">Reconstructing execution graph...</div>
       </div>
     );
   }
 
   const { dag, insights, code_mappings, summary } = result;
 
+  const tabs = [
+    { id: 'dag', label: 'Flow Graph', icon: Layers },
+    { id: 'code', label: 'Code Map', icon: Code2 },
+    { id: 'insights', label: 'Insights', icon: Lightbulb },
+    { id: 'compare', label: 'Compare', icon: Layout },
+    { id: 'metrics', label: 'Metrics', icon: BarChart2 },
+  ] as const;
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Demo Mode Banner - Feature 6 */}
-      {result.is_demo && (
-        <div className="bg-purple-500/10 border-b border-purple-500/30">
-          <div className="container mx-auto px-4 py-2 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm">
-              <span>🎮</span>
-              <span className="text-purple-300">
-                {result.demo_label || 'Demo Data — Try uploading your own files for real analysis'}
-              </span>
-            </div>
-            <Link
-              href="/upload"
-              className="text-xs px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded transition-colors"
+    <main className="min-h-screen bg-background relative overflow-hidden">
+      {/* Background Ambience */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative z-10 flex flex-col h-screen">
+        {/* Demo Mode Banner */}
+        <AnimatePresence>
+          {result.is_demo && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="bg-purple-500/10 border-b border-purple-500/20 backdrop-blur-sm"
             >
-              Upload Your Own →
-            </Link>
-          </div>
-        </div>
-      )}
-      
-      {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/50 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <Link href="/" className="text-xl font-bold">
-                <span className="text-orange-500">Spark</span>
-                <span className="text-yellow-500">-Sword</span>
+              <div className="container mx-auto px-4 py-2 flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🎮</span>
+                  <span className="text-purple-300 font-medium tracking-wide">
+                    {result.demo_label || 'Demo Mode Active'}
+                  </span>
+                </div>
+                <Link
+                  href="/upload"
+                  className="text-xs px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-md transition-all hover:scale-105"
+                >
+                  Upload Your Own →
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        {/* Header */}
+        <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-50">
+          <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-8">
+              <Link href="/" className="flex items-center gap-2 group">
+                <div className="w-8 h-8 rounded bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:scale-105 transition-transform">
+                  S
+                </div>
+                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
+                  PrepRabbit
+                </span>
               </Link>
               
-              {/* View Mode Tabs */}
-              <div className="flex gap-1 bg-slate-800/50 rounded-lg p-1">
-                {(['dag', 'code', 'insights', 'compare', 'metrics'] as ViewMode[]).map((mode) => (
+              {/* Navigation Tabs */}
+              <div className="hidden md:flex bg-muted/50 p-1 rounded-lg border border-border/50">
+                {tabs.map((tab) => (
                   <button
-                    key={mode}
-                    onClick={() => setViewMode(mode)}
-                    className={`
-                      px-4 py-1.5 rounded text-sm font-medium transition-colors
-                      ${viewMode === mode
-                        ? 'bg-blue-600 text-white'
-                        : 'text-slate-400 hover:text-white'}
-                    `}
+                    key={tab.id}
+                    onClick={() => setViewMode(tab.id as ViewMode)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all relative",
+                      viewMode === tab.id
+                        ? "text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
                   >
-                    {mode === 'dag' ? 'DAG' : mode === 'code' ? 'Code' : mode === 'compare' ? 'Compare' : mode.charAt(0).toUpperCase() + mode.slice(1)}
+                    {viewMode === tab.id && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute inset-0 bg-primary rounded-md"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-2">
+                      <tab.icon className="w-4 h-4" />
+                      {tab.label}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -175,227 +252,275 @@ export default function AnalysisPage() {
             
             <div className="flex items-center gap-4">
               {/* Learning Mode Toggle */}
-              <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer">
+              <label className={cn(
+                "flex items-center gap-2 text-sm px-3 py-1.5 rounded-full border transition-all cursor-pointer select-none",
+                learningMode 
+                  ? "bg-blue-500/10 border-blue-500/30 text-blue-400" 
+                  : "bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50"
+              )}>
                 <input
                   type="checkbox"
                   checked={learningMode}
                   onChange={(e) => setLearningMode(e.target.checked)}
-                  className="rounded bg-slate-700 border-slate-600 text-blue-500 focus:ring-blue-500"
+                  className="hidden"
                 />
-                Learning Mode
+                <Lightbulb className={cn("w-4 h-4", learningMode ? "fill-current" : "")} />
+                <span>Learning Mode</span>
               </label>
               
               <Link
                 href="/upload"
-                className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors"
+                className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
               >
-                New Upload
+                <ArrowLeft className="w-4 h-4" />
+                New Analysis
               </Link>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Summary Bar */}
-      <div className="border-b border-slate-800 bg-slate-900/30">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex gap-6 text-sm">
-            <div>
-              <span className="text-slate-500">Jobs:</span>
-              <span className="ml-2 text-white font-medium">{summary.total_jobs}</span>
-            </div>
-            <div>
-              <span className="text-slate-500">Stages:</span>
-              <span className="ml-2 text-white font-medium">{summary.total_stages}</span>
-            </div>
-            <div>
-              <span className="text-slate-500">Tasks:</span>
-              <span className="ml-2 text-white font-medium">{summary.total_tasks.toLocaleString()}</span>
-            </div>
-            <div>
-              <span className="text-slate-500">Duration:</span>
-              <span className="ml-2 text-white font-medium">{formatDuration(summary.total_duration_ms)}</span>
-            </div>
-            <div>
-              <span className="text-slate-500">Shuffle:</span>
-              <span className={`ml-2 font-medium ${summary.total_shuffle_bytes > 0 ? 'text-yellow-400' : 'text-green-400'}`}>
-                {formatBytes(summary.total_shuffle_bytes)}
-              </span>
-            </div>
-            {summary.total_spill_bytes > 0 && (
-              <div>
-                <span className="text-slate-500">Spill:</span>
-                <span className="ml-2 text-red-400 font-medium">
-                  {formatBytes(summary.total_spill_bytes)}
+        {/* Global Summary Bar */}
+        <div className="border-b border-border bg-muted/20 backdrop-blur-sm">
+          <div className="container mx-auto px-4 py-2">
+            <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm justify-center md:justify-start">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Duration:</span>
+                <span className="font-mono text-foreground font-medium bg-muted/50 px-2 py-0.5 rounded">
+                  {formatDuration(summary.total_duration_ms)}
                 </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Shuffle:</span>
+                <span className={cn(
+                  "font-mono font-medium px-2 py-0.5 rounded",
+                  summary.total_shuffle_bytes > 0 ? "bg-yellow-500/10 text-yellow-500" : "bg-green-500/10 text-green-500"
+                )}>
+                  {formatBytes(summary.total_shuffle_bytes)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Tasks:</span>
+                <span className="font-mono text-foreground font-medium">
+                  {summary.total_tasks.toLocaleString()}
+                </span>
+              </div>
+              {summary.total_spill_bytes > 0 && (
+                <div className="flex items-center gap-2 animate-pulse">
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  <span className="text-red-500 font-medium">
+                    Spill: {formatBytes(summary.total_spill_bytes)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Scrollable Main Content */}
+        <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+          <div className="container mx-auto max-w-7xl h-full">
+            <motion.div
+              key={viewMode}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="h-full"
+            >
+            {viewMode === 'dag' && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-[600px]">
+                {/* DAG View */}
+                <Card variant="default" className="lg:col-span-2 flex flex-col overflow-hidden h-[600px] lg:h-auto">
+                  <div className="p-4 border-b border-border flex justify-between items-center bg-muted/10">
+                    <div>
+                      <h2 className="text-lg font-semibold flex items-center gap-2">
+                        <Layers className="w-5 h-5 text-primary" />
+                        Execution Flow
+                      </h2>
+                      {learningMode && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Nodes = Stages. Edges = Dependencies. <span className="text-red-400">Red edges</span> = Shuffles (costly data moves).
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1 bg-gradient-to-br from-background to-muted/20 relative">
+                     {/* 
+                         In a real implementation, the DAG container needs explicit height. 
+                         The component handles its own layout, we just provide the container.
+                      */}
+                    <DAGVisualization
+                      data={dag}
+                      onNodeClick={(nodeId) => setSelectedStageId(nodeId)}
+                      selectedNodeId={selectedStageId ?? undefined}
+                    />
+                  </div>
+                </Card>
+
+                {/* Stage Details Panel */}
+                <Card variant="default" className="overflow-hidden flex flex-col h-full lg:h-auto lg:max-h-[calc(100vh-250px)]">
+                  <div className="p-4 border-b border-border bg-muted/10">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-primary" />
+                      Stage Details
+                    </h2>
+                  </div>
+                  <CardContent className="flex-1 overflow-y-auto">
+                    {selectedStageId ? (
+                      <StageDetails
+                        stageId={selectedStageId}
+                        dag={dag}
+                        insights={insights}
+                        stageExplanations={result.stage_explanations || []}
+                        learningMode={learningMode}
+                      />
+                    ) : (
+                      <div className="h-full flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
+                        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                          <Layers className="w-8 h-8 opacity-50" />
+                        </div>
+                        <p className="text-lg font-medium text-foreground">No Stage Selected</p>
+                        <p className="text-sm mt-2 max-w-xs">Click on any node in the graph to inspect its metrics, operations, and insights.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             )}
-          </div>
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-6">
-        {viewMode === 'dag' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* DAG View */}
-            <div className="lg:col-span-2 bg-slate-900/50 rounded-xl border border-slate-800 overflow-hidden">
-              <div className="p-4 border-b border-slate-800">
-                <h2 className="text-lg font-semibold text-white">Execution DAG</h2>
-                {learningMode && (
-                  <p className="text-xs text-slate-400 mt-1">
-                    Each node represents a stage. Edges show data dependencies. 
-                    Red edges indicate shuffle boundaries where data is redistributed across the cluster.
-                  </p>
-                )}
-              </div>
-              <div className="h-[600px]">
-                <DAGVisualization
-                  data={dag}
-                  onNodeClick={(nodeId) => setSelectedStageId(nodeId)}
-                  selectedNodeId={selectedStageId ?? undefined}
-                />
-              </div>
-            </div>
-
-            {/* Stage Details Panel */}
-            <div className="bg-slate-900/50 rounded-xl border border-slate-800">
-              <div className="p-4 border-b border-slate-800">
-                <h2 className="text-lg font-semibold text-white">Stage Details</h2>
-              </div>
-              <div className="p-4">
-                {selectedStageId ? (
-                  <StageDetails
-                    stageId={selectedStageId}
-                    dag={dag}
-                    insights={insights}
-                    stageExplanations={result.stage_explanations || []}
+            {viewMode === 'code' && (
+              <Card variant="default" className="min-h-[600px]">
+                <CardContent>
+                  <CodeMappingPanel
+                    mappings={code_mappings || []}
+                    onStageClick={(stageId) => {
+                      setSelectedStageId(String(stageId));
+                      setViewMode('dag');
+                    }}
+                    selectedStageId={selectedStageId ? parseInt(selectedStageId) : null}
                     learningMode={learningMode}
                   />
-                ) : (
-                  <div className="text-center py-8 text-slate-500">
-                    <div className="text-3xl mb-2">👆</div>
-                    <p>Click a stage in the DAG to see details</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {viewMode === 'insights' && (
+              <div className="h-full">
+                <InsightsPanel
+                  insights={insights}
+                  onInsightClick={(insight) => {
+                    if (insight.stage_id) {
+                      setSelectedStageId(String(insight.stage_id));
+                      setViewMode('dag');
+                    }
+                  }}
+                />
+              </div>
+            )}
+
+            {viewMode === 'compare' && (
+              <Card variant="default">
+                <CardContent>
+                  <BeforeAfterComparison
+                    currentMetrics={{
+                      shuffleBytes: summary.total_shuffle_bytes,
+                      spillBytes: summary.total_spill_bytes,
+                      taskDurationMs: summary.total_duration_ms / Math.max(summary.total_tasks, 1),
+                      partitions: summary.total_stages * 200, // Estimate based on default
+                      stages: summary.total_stages,
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {viewMode === 'metrics' && (
+              <div className="space-y-8 max-w-5xl mx-auto pb-12">
+                {/* Overview Metrics */}
+                <section>
+                  <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-primary" />
+                    Overall Health
+                  </h2>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <MetricCard label="Total Jobs" value={summary.total_jobs} icon={Server} />
+                    <MetricCard label="Total Stages" value={summary.total_stages} icon={Layers} />
+                    <MetricCard label="Total Tasks" value={summary.total_tasks.toLocaleString()} icon={Cpu} />
+                    <MetricCard label="Duration" value={formatDuration(summary.total_duration_ms)} icon={Clock} />
                   </div>
-                )}
+                </section>
+
+                {/* Data Movement */}
+                <section>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-semibold flex items-center gap-2">
+                      <Database className="w-5 h-5 text-primary" />
+                      Data Movement
+                    </h2>
+                    {learningMode && (
+                      <span className="text-xs px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        Shuffle = Network I/O. Spill = Disk I/O. Both slow.
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <MetricCard 
+                      label="Total Shuffle" 
+                      value={formatBytes(summary.total_shuffle_bytes)}
+                      warning={summary.total_shuffle_bytes > 10 * 1024 * 1024 * 1024}
+                      icon={Zap}
+                    />
+                    <MetricCard 
+                      label="Spill to Disk" 
+                      value={formatBytes(summary.total_spill_bytes)}
+                      warning={summary.total_spill_bytes > 0}
+                      unit="wasted IO"
+                      icon={AlertTriangle}
+                    />
+                    <MetricCard 
+                      label="Avg Task Time" 
+                      value={formatDuration(summary.total_duration_ms / Math.max(summary.total_tasks, 1))}
+                      icon={Clock}
+                    />
+                  </div>
+                </section>
+
+                {/* Insights Summary */}
+                <section>
+                  <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5 text-primary" />
+                    Optimization Opportunities
+                  </h2>
+                  <div className="grid grid-cols-3 gap-4">
+                    <MetricCard 
+                      label="High Confidence" 
+                      value={insights.filter(i => i.confidence === 'high').length}
+                    />
+                    <MetricCard 
+                      label="Medium Confidence" 
+                      value={insights.filter(i => i.confidence === 'medium').length}
+                    />
+                    <MetricCard 
+                      label="Low Confidence" 
+                      value={insights.filter(i => i.confidence === 'low').length}
+                    />
+                  </div>
+                </section>
+
+                {/* Stage Timeline */}
+                <section>
+                  <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-primary" />
+                    Timeline Analysis
+                  </h2>
+                  <div className="bg-card rounded-xl border border-border p-6 shadow-sm overflow-x-auto">
+                    <StageTimeline stages={stageTimelineData} />
+                  </div>
+                </section>
               </div>
-            </div>
+            )}
+            </motion.div>
           </div>
-        )}
-
-        {viewMode === 'code' && (
-          <div className="bg-slate-900/50 rounded-xl border border-slate-800 p-6">
-            <CodeMappingPanel
-              mappings={code_mappings || []}
-              onStageClick={(stageId) => {
-                setSelectedStageId(String(stageId));
-                setViewMode('dag');
-              }}
-              selectedStageId={selectedStageId ? parseInt(selectedStageId) : null}
-              learningMode={learningMode}
-            />
-          </div>
-        )}
-
-        {viewMode === 'insights' && (
-          <InsightsPanel
-            insights={insights}
-            onInsightClick={(insight) => {
-              if (insight.stage_id) {
-                setSelectedStageId(String(insight.stage_id));
-                setViewMode('dag');
-              }
-            }}
-          />
-        )}
-
-        {viewMode === 'compare' && (
-          <BeforeAfterComparison
-            currentMetrics={{
-              shuffleBytes: summary.total_shuffle_bytes,
-              spillBytes: summary.total_spill_bytes,
-              taskDurationMs: summary.total_duration_ms / Math.max(summary.total_tasks, 1),
-              partitions: summary.total_stages * 200, // Estimate based on default
-              stages: summary.total_stages,
-            }}
-          />
-        )}
-
-        {viewMode === 'metrics' && (
-          <div className="space-y-6">
-            {/* Overview Metrics */}
-            <div>
-              <h2 className="text-lg font-semibold text-white mb-4">Execution Overview</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <MetricCard label="Total Jobs" value={summary.total_jobs} />
-                <MetricCard label="Total Stages" value={summary.total_stages} />
-                <MetricCard label="Total Tasks" value={summary.total_tasks.toLocaleString()} />
-                <MetricCard label="Duration" value={formatDuration(summary.total_duration_ms)} />
-              </div>
-            </div>
-
-            {/* Data Movement */}
-            <div>
-              <h2 className="text-lg font-semibold text-white mb-4">Data Movement</h2>
-              {learningMode && (
-                <p className="text-sm text-slate-400 mb-4">
-                  Shuffle moves data across the network. Spill writes to disk when memory is exhausted.
-                  Both are expensive operations that indicate potential optimization opportunities.
-                </p>
-              )}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <MetricCard 
-                  label="Total Shuffle" 
-                  value={formatBytes(summary.total_shuffle_bytes)}
-                  warning={summary.total_shuffle_bytes > 10 * 1024 * 1024 * 1024}
-                />
-                <MetricCard 
-                  label="Spill to Disk" 
-                  value={formatBytes(summary.total_spill_bytes)}
-                  warning={summary.total_spill_bytes > 0}
-                />
-              </div>
-            </div>
-
-            {/* Insights Summary */}
-            <div>
-              <h2 className="text-lg font-semibold text-white mb-4">
-                Optimization Insights
-                <span className="ml-2 px-2 py-0.5 text-xs bg-blue-600 rounded-full">
-                  {insights.length}
-                </span>
-              </h2>
-              <div className="grid grid-cols-3 gap-4">
-                <MetricCard 
-                  label="High Confidence" 
-                  value={insights.filter(i => i.confidence === 'high').length}
-                />
-                <MetricCard 
-                  label="Medium Confidence" 
-                  value={insights.filter(i => i.confidence === 'medium').length}
-                />
-                <MetricCard 
-                  label="Low Confidence" 
-                  value={insights.filter(i => i.confidence === 'low').length}
-                />
-              </div>
-            </div>
-
-            {/* Stage Timeline */}
-            <div>
-              <h2 className="text-lg font-semibold text-white mb-4">Stage Metrics Timeline</h2>
-              {learningMode && (
-                <p className="text-sm text-slate-400 mb-4">
-                  The timeline shows when each stage executed and how long it took.
-                  Overlapping bars indicate parallel execution. Use this to identify bottleneck stages.
-                </p>
-              )}
-              <div className="bg-slate-800/30 rounded-lg p-4">
-                <StageTimeline stages={stageTimelineData} />
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </main>
   );
@@ -416,7 +541,7 @@ function StageDetails({
 }) {
   const stage = dag.nodes.find(n => n.id === stageId);
   if (!stage) {
-    return <div className="text-slate-500">Stage not found</div>;
+    return <div className="text-muted-foreground p-4">Stage not found</div>;
   }
 
   // Find explanation for this stage
@@ -427,28 +552,33 @@ function StageDetails({
   const metadata = stage.data.metadata;
 
   return (
-    <div className="space-y-4">
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      key={stageId} // Re-animate on stage change
+      className="space-y-6"
+    >
       {/* Stage header */}
       <div>
-        <h3 className="text-lg font-semibold text-white">{stage.data.label}</h3>
-        <div className="flex items-center gap-2 mt-1">
+        <h3 className="text-xl font-bold break-words leading-tight">{stage.data.label}</h3>
+        <div className="flex flex-wrap gap-2 mt-3">
           {metadata?.status && (
-            <span className={`
-              inline-block px-2 py-0.5 text-xs rounded
-              ${metadata.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                metadata.status === 'failed' ? 'bg-red-500/20 text-red-400' :
-                'bg-yellow-500/20 text-yellow-400'}
-            `}>
-              {metadata.status}
+            <span className={cn(
+              "px-2.5 py-0.5 text-xs font-semibold rounded-full border",
+              metadata.status === 'completed' ? "bg-green-500/10 text-green-500 border-green-500/20" :
+                metadata.status === 'failed' ? "bg-red-500/10 text-red-500 border-red-500/20" :
+                "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+            )}>
+              {metadata.status.toUpperCase()}
             </span>
           )}
           {explanation?.is_shuffle_boundary && (
-            <span className="inline-block px-2 py-0.5 text-xs rounded bg-yellow-500/20 text-yellow-400">
-              Shuffle
+            <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">
+              Shuffle Boundary
             </span>
           )}
           {explanation?.is_expensive && (
-            <span className="inline-block px-2 py-0.5 text-xs rounded bg-red-500/20 text-red-400">
+            <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-red-500/10 text-red-500 border border-red-500/20">
               Expensive
             </span>
           )}
@@ -456,98 +586,127 @@ function StageDetails({
       </div>
 
       {/* Structured Explanation (Feature 2: Explanation Engine) */}
-      {explanation && (
+      {explanation ? (
         <div className="space-y-3">
-          {/* Observation - What happened */}
-          <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-            <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">📊 Observation</div>
-            <p className="text-sm text-slate-300">{explanation.observation}</p>
+          {/* Observation */}
+          <div className="p-4 bg-muted/50 rounded-lg border border-border">
+            <div className="flex items-center gap-2 mb-2">
+              <Activity className="w-4 h-4 text-primary" />
+              <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Observation</div>
+            </div>
+            <p className="text-sm leading-relaxed">{explanation.observation}</p>
           </div>
           
-          {/* Spark Rule - Why it exists */}
-          <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
-            <div className="text-xs text-blue-400 uppercase tracking-wide mb-1">⚙️ Spark Rule Involved</div>
-            <p className="text-sm text-slate-300">{explanation.spark_rule}</p>
+          {/* Spark Rule */}
+          <div className="p-4 bg-blue-500/5 rounded-lg border border-blue-500/20">
+            <div className="flex items-center gap-2 mb-2">
+              <Cpu className="w-4 h-4 text-blue-500" />
+              <div className="text-xs text-blue-500 uppercase tracking-wider font-semibold">Spark Logic</div>
+            </div>
+            <p className="text-sm text-foreground/90">{explanation.spark_rule}</p>
           </div>
           
-          {/* Cost Driver - Why expensive (if applicable) */}
+          {/* Cost Driver */}
           {explanation.cost_driver && (
-            <div className="p-3 bg-orange-500/10 rounded-lg border border-orange-500/30">
-              <div className="text-xs text-orange-400 uppercase tracking-wide mb-1">💰 Cost Driver</div>
-              <p className="text-sm text-slate-300">{explanation.cost_driver}</p>
+            <div className="p-4 bg-orange-500/5 rounded-lg border border-orange-500/20">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="w-4 h-4 text-orange-500" />
+                <div className="text-xs text-orange-500 uppercase tracking-wider font-semibold">Cost Driver</div>
+              </div>
+              <p className="text-sm text-foreground/90">{explanation.cost_driver}</p>
             </div>
           )}
         </div>
-      )}
-
-      {/* Metrics */}
-      {metadata && (
-        <div className="space-y-2">
-          {metadata.num_tasks && (
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-400">Tasks</span>
-              <span className="text-white">{metadata.num_tasks}</span>
-            </div>
-          )}
-          {metadata.duration_ms && (
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-400">Duration</span>
-              <span className="text-white">{formatDuration(metadata.duration_ms)}</span>
-            </div>
-          )}
-          {metadata.input_bytes && (
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-400">Input</span>
-              <span className="text-white">{formatBytes(metadata.input_bytes)}</span>
-            </div>
-          )}
-          {(metadata.shuffle_write_bytes ?? 0) > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-400">Shuffle Write</span>
-              <span className="text-yellow-400">{formatBytes(metadata.shuffle_write_bytes!)}</span>
-            </div>
-          )}
-          {(metadata.spill_bytes ?? 0) > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-400">Spill</span>
-              <span className="text-red-400">{formatBytes(metadata.spill_bytes!)}</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Learning mode - additional explanation (fallback if no structured explanation) */}
-      {learningMode && !explanation && metadata && (
-        <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-          <div className="text-xs text-blue-400 uppercase tracking-wide mb-1">Why This Stage</div>
-          <p className="text-sm text-slate-300">
+      ) : learningMode && metadata ? (
+        // Fallback for learning mode
+        <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <Lightbulb className="w-4 h-4 text-blue-500" />
+            <div className="text-xs text-blue-500 uppercase tracking-wider font-semibold">Why This Stage Exists</div>
+          </div>
+          <p className="text-sm text-foreground/90">
             {(metadata.shuffle_write_bytes ?? 0) > 0 
-              ? 'This stage writes shuffle data, indicating a wide transformation (join, groupBy, repartition). Data is redistributed across the cluster.'
-              : 'This stage performs narrow transformations. Data stays within partitions.'}
+              ? 'This stage ends with a shuffle, meaning data is being redistributed across the cluster for a wide transformation (like a join or aggregation).'
+              : 'This stage consists of narrow transformations (like map or filter) where data can be processed without moving between nodes.'}
           </p>
         </div>
-      )}
+      ) : null}
 
-      {/* Related insights */}
-      {stageInsights.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-slate-400">Related Insights</h4>
-          {stageInsights.map((insight, idx) => (
-            <div 
-              key={idx}
-              className={`
-                p-3 rounded-lg border
-                ${insight.confidence === 'high' ? 'border-green-500/30 bg-green-500/5' :
-                  insight.confidence === 'medium' ? 'border-yellow-500/30 bg-yellow-500/5' :
-                  'border-orange-500/30 bg-orange-500/5'}
-              `}
-            >
-              <div className="text-sm text-white">{insight.title}</div>
-              <div className="text-xs text-slate-400 mt-1">{insight.description}</div>
+      {/* Metrics Grid */}
+      {metadata && (
+        <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 bg-muted/30 rounded border border-border">
+              <div className="text-xs text-muted-foreground">Duration</div>
+              <div className="text-lg font-mono font-medium">{formatDuration(metadata.duration_ms || 0)}</div>
             </div>
-          ))}
+            <div className="p-3 bg-muted/30 rounded border border-border">
+              <div className="text-xs text-muted-foreground">Tasks</div>
+              <div className="text-lg font-mono font-medium">{metadata.num_tasks}</div>
+            </div>
+            <div className="p-3 bg-muted/30 rounded border border-border">
+              <div className="text-xs text-muted-foreground">Input Data</div>
+              <div className="text-lg font-mono font-medium">{formatBytes(metadata.input_bytes || 0)}</div>
+            </div>
+            <div className="p-3 bg-muted/30 rounded border border-border">
+              <div className="text-xs text-muted-foreground">Shuffle Write</div>
+              <div className={cn("text-lg font-mono font-medium", (metadata.shuffle_write_bytes || 0) > 0 ? "text-yellow-500" : "")}>
+                {formatBytes(metadata.shuffle_write_bytes || 0)}
+              </div>
+            </div>
+            {(metadata.spill_bytes ?? 0) > 0 && (
+              <div className="col-span-2 p-3 bg-red-500/10 rounded border border-red-500/20">
+                <div className="text-xs text-red-400">Disk Spill (Performance Hit)</div>
+                <div className="text-lg font-mono font-medium text-red-500">{formatBytes(metadata.spill_bytes!)}</div>
+              </div>
+            )}
         </div>
       )}
-    </div>
+
+      {/* Related insights (Mini-cards) */}
+      {stageInsights.length > 0 && (
+        <div className="space-y-3 pt-4 border-t border-border">
+          <h4 className="text-sm font-semibold flex items-center gap-2">
+            <SparklesIcon className="w-4 h-4 text-primary" />
+            Smart Hints
+          </h4>
+          {stageInsights.map((insight, idx) => {
+            const colors = {
+              high: "border-green-500/30 bg-green-500/5 text-green-500",
+              medium: "border-yellow-500/30 bg-yellow-500/5 text-yellow-500",
+              low: "border-orange-500/30 bg-orange-500/5 text-orange-500"
+            };
+            const borderColor = colors[insight.confidence as keyof typeof colors] || colors.low;
+            
+            return (
+              <div key={idx} className={cn("p-3 rounded-lg border", borderColor)}>
+                <div className="text-sm font-medium text-foreground">{insight.title}</div>
+                <div className="text-xs text-muted-foreground mt-1 leading-normal">{insight.description}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+function SparklesIcon({ className }: { className?: string }) {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+      <path d="M5 3v4" />
+      <path d="M9 3v4" />
+      <path d="M3 5h4" />
+      <path d="M3 9h4" />
+    </svg>
   );
 }

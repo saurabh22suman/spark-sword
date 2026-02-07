@@ -23,7 +23,7 @@ interface LearningModeContextValue {
 
 const LearningModeContext = createContext<LearningModeContextValue | undefined>(undefined);
 
-const STORAGE_KEY = 'spark-sword-learning-mode';
+const STORAGE_KEY = 'preprabbit-learning-mode';
 
 export function LearningModeProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<LearningMode>('expert');

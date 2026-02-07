@@ -13,6 +13,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - DUCKDB_PATH=/app/data/spark_sword.duckdb
+      - PROGRESS_DB_PATH=/app/data/progress.duckdb
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s

@@ -1,1 +1,1 @@
-"""Pydantic models for Spark-Sword."""
+"""Pydantic models for PrepRabbit."""

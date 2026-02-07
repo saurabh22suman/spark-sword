@@ -25,7 +25,7 @@
 
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { DataShapePanel, type DataShape } from './DataShapePanel';
 import { OperationsBuilder, type Operation } from './OperationsBuilder';
 import { OperationControls } from './OperationControls';
@@ -33,6 +33,8 @@ import { SparkViewPanel } from './SparkViewPanel';
 import { ImpactPanel } from './ImpactPanel';
 import { PresetsBar } from './PresetsBar';
 import { ComparisonTimeline } from './ComparisonTimeline';
+import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 interface PlaygroundV3Props {
   className?: string;
@@ -232,7 +234,7 @@ function generateSparkDecision(shape: DataShape, operations: Operation[]) {
   return { strategy, explanation, dominantFactor, confidence };
 }
 
-export function PlaygroundV3({ className = '', initialScenario }: PlaygroundV3Props) {
+export function PlaygroundV3({ className = '', initialScenario: _initialScenario }: PlaygroundV3Props) {
   const [shape, setShape] = useState<DataShape>(DEFAULT_SHAPE);
   const [operations, setOperations] = useState<Operation[]>([]);
   const [selectedOperationId, setSelectedOperationId] = useState<string | null>(null);
@@ -264,24 +266,30 @@ export function PlaygroundV3({ className = '', initialScenario }: PlaygroundV3Pr
   }, []);
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className={cn("space-y-6", className)}
+    >
       {/* Mode toggle */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-400">Mode:</span>
+          <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Mode:</span>
           <button
             onClick={() => setExpertMode(!expertMode)}
-            className={`px-3 py-1 text-sm rounded transition-colors ${
+            className={cn(
+              "px-4 py-1.5 text-xs font-semibold rounded-full transition-all uppercase tracking-wider",
               expertMode 
-                ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' 
-                : 'bg-slate-700 text-slate-300'
-            }`}
+                ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30' 
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+            )}
           >
             {expertMode ? 'Expert' : 'Standard'}
           </button>
         </div>
-        <div className="text-xs text-slate-500">
-          ⚡ All simulations are estimates — no actual Spark execution
+        <div className="text-xs text-slate-500 flex items-center gap-1.5 bg-yellow-50 dark:bg-yellow-900/10 px-3 py-1.5 rounded-full border border-yellow-100 dark:border-yellow-900/20 text-yellow-700 dark:text-yellow-500">
+          <span className="text-base">⚡</span> All simulations are estimates — no actual Spark execution
         </div>
       </div>
 
@@ -289,8 +297,8 @@ export function PlaygroundV3({ className = '', initialScenario }: PlaygroundV3Pr
       <PresetsBar onApply={applyPreset} />
 
       {/* Data Shape (Global) */}
-      <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-4">
+      <div className="p-6 bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
           Global Data Shape
         </h3>
         <DataShapePanel 
@@ -301,9 +309,10 @@ export function PlaygroundV3({ className = '', initialScenario }: PlaygroundV3Pr
       </div>
 
       {/* Three-column layout: Operations | Spark View | Impact */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Operations Builder (Left) */}
-        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+        <div className="p-6 bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-full">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Pipeline</h3>
           <OperationsBuilder
             operations={operations}
             onChange={setOperations}
@@ -313,17 +322,22 @@ export function PlaygroundV3({ className = '', initialScenario }: PlaygroundV3Pr
           
           {/* Operation-specific controls */}
           {selectedOperation && (
-            <div className="mt-4 pt-4 border-t border-slate-800">
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800"
+            >
               <OperationControls
                 operation={selectedOperation}
                 onChange={updateOperation}
               />
-            </div>
+            </motion.div>
           )}
         </div>
 
         {/* Spark View (Center) */}
-        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+        <div className="p-6 bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm min-h-[500px]">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Execution Plan</h3>
           <SparkViewPanel
             operations={operations}
             chainResult={{
@@ -335,7 +349,8 @@ export function PlaygroundV3({ className = '', initialScenario }: PlaygroundV3Pr
         </div>
 
         {/* Impact Panel (Right) */}
-        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+        <div className="p-6 bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Impact Analysis</h3>
           <ImpactPanel
             shuffleBytes={simulation.shuffleBytes}
             taskCount={simulation.taskCount}
@@ -347,7 +362,8 @@ export function PlaygroundV3({ className = '', initialScenario }: PlaygroundV3Pr
       </div>
 
       {/* Comparison Timeline / History */}
-      <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+      <div className="p-6 bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">History Log</h3>
         <ComparisonTimeline
           currentShape={shape}
           currentOperations={operations}
@@ -359,7 +375,7 @@ export function PlaygroundV3({ className = '', initialScenario }: PlaygroundV3Pr
           onRevert={revertToSnapshot}
         />
       </div>
-    </div>
+    </motion.div>
   );
 }
 

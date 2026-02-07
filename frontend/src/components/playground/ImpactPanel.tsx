@@ -8,6 +8,7 @@
 
 'use client';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface ImpactMetric {
   label: string;
   value: string;

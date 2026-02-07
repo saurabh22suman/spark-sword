@@ -13,7 +13,7 @@
 
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { PartitionBars } from './PartitionBars';
 
 export interface DataShape {

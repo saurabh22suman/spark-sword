@@ -1,8 +1,10 @@
-# Spark-Sword
+# PrepRabbit — Spark Learning Platform
 
 **Spark Internals Explorer — Explain, Simulate, Suggest**
 
 A web application that helps developers and students understand Spark/Databricks internals by visualizing how Spark executes code, explaining why it behaves a certain way, and suggesting performance improvements.
+
+**PrepRabbit** is an umbrella platform for interactive learning tools. This is the **Spark** series, focused on Apache Spark mastery.
 
 ## 🎯 Core Philosophy
 

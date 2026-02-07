@@ -24,7 +24,7 @@ from app.scenarios.dag import build_scenario_dag, ScenarioDAG
 from app.simulators.shape_playground import DataFrameShape, ShapePlayground
 
 
-router = APIRouter(prefix="/scenarios", tags=["scenarios"])
+router = APIRouter(prefix="/api/scenarios", tags=["scenarios"])
 
 
 class ScenarioSummary(BaseModel):
@@ -51,6 +51,9 @@ class ScenarioDetail(BaseModel):
     evidence_signals: list[str]
     explanation_goal: str
     playground_defaults: dict
+    learning_goals: list[str] = []
+    key_takeaways: list[str] = []
+    common_mistakes: list[str] = []
 
 
 class DAGNodeResponse(BaseModel):
@@ -89,6 +92,7 @@ class ScenarioWithSimulation(BaseModel):
 
 
 @router.get("/", response_model=list[ScenarioSummary])
+@router.get("/list", response_model=list[ScenarioSummary])
 async def get_scenarios():
     """List all available scenarios.
     
@@ -177,6 +181,9 @@ async def get_scenario(scenario_id: str):
         evidence_signals=scenario.evidence_signals,
         explanation_goal=scenario.explanation_goal,
         playground_defaults=scenario.playground_defaults,
+        learning_goals=scenario.learning_goals,
+        key_takeaways=scenario.key_takeaways,
+        common_mistakes=scenario.common_mistakes,
     )
     
     simulation_preview = SimulationPreview(

@@ -1,4 +1,4 @@
-/** Common TypeScript types for Spark-Sword frontend */
+/** Common TypeScript types for PrepRabbit frontend */
 
 // ============================================================
 // Spark Event Log Types (matching backend models)
@@ -290,6 +290,9 @@ export interface ScenarioDetail {
   evidence_signals: string[];
   explanation_goal: string;
   playground_defaults: PlaygroundDefaults;
+  learning_goals: string[];
+  key_takeaways: string[];
+  common_mistakes: string[];
 }
 
 export interface SimulationPreview {
@@ -334,4 +337,59 @@ export interface ScenarioWithSimulation {
   scenario: ScenarioDetail;
   simulation: SimulationPreview;
   dag?: ScenarioDAGData;
+}
+
+// ============================================================
+// Tutorial Types (Interactive Learning System)
+// ============================================================
+
+export interface PredictionChallenge {
+  question: string;
+  options: string[];
+  correct_index: number;
+  explanation: string;
+  misconception?: string;
+  hints?: string[];
+}
+
+export interface InteractiveTutorial {
+  id: string;
+  title: string;
+  description: string;
+  component_type: string;
+  learning_outcome: string;
+  prediction_challenge?: PredictionChallenge;
+}
+
+export interface TutorialTopic {
+  id: string;
+  title: string;
+  description: string;
+  tutorials: InteractiveTutorial[];
+}
+
+export interface TutorialGroup {
+  id: string;
+  number: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  icon: string;
+  color: string;
+  topics: string[];
+  learning_outcome: string;
+  tutorial_topics: TutorialTopic[];
+  key_takeaways: string[];
+  common_mistakes: string[];
+}
+
+export interface TutorialGroupSummary {
+  id: string;
+  number: number;
+  title: string;
+  subtitle: string;
+  icon: string;
+  color: string;
+  topic_count: number;
+  tutorial_count: number;
 }

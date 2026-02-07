@@ -8,28 +8,21 @@ import { test, expect } from '@playwright/test';
  */
 test.describe('Demo Mode', () => {
   test.describe('Home Page', () => {
-    test('shows demo mode link on home page', async ({ page }) => {
+    test('shows upload link on home page', async ({ page }) => {
       await page.goto('/', { waitUntil: 'networkidle' });
       
-      // Should have a Try Demo Mode link
-      await expect(page.getByText('Try Demo Mode')).toBeVisible();
+      // Should have Upload Your Logs link
+      await expect(page.getByText('Upload Your Logs')).toBeVisible();
     });
 
-    test('demo mode link has helpful description', async ({ page }) => {
+    test('upload link navigates to upload page', async ({ page }) => {
       await page.goto('/', { waitUntil: 'networkidle' });
       
-      // Should indicate no upload needed
-      await expect(page.getByText('No upload needed')).toBeVisible();
-    });
-
-    test('clicking demo mode navigates to demo page', async ({ page }) => {
-      await page.goto('/', { waitUntil: 'networkidle' });
+      // Click the upload link
+      await page.getByText('Upload Your Logs').click();
       
-      // Click the demo mode link
-      await page.getByText('Try Demo Mode').click();
-      
-      // Should navigate to /demo or /analysis (if demo loads quickly)
-      await expect(page).toHaveURL(/\/(demo|analysis)/);
+      // Should navigate to /upload
+      await expect(page).toHaveURL(/\/upload/);
     });
   });
 

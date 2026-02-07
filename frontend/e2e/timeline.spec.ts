@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Timeline Visualization E2E Tests (Updated for PlaygroundV3)
+ * Timeline Visualization E2E Tests (Updated for PlaygroundV3 Revamp)
  * 
- * Tests for stage timeline / task duration metrics.
- * Per work-ahead.md: "Every chart must represent real metrics"
+ * Tests for history/timeline and DAG visualization.
+ * Per playground-v3-full-revamp-spec.md: "Timeline / History / Reset"
  * 
- * PlaygroundV3 now shows task time in Impact Panel (live, no Simulate button)
+ * PlaygroundV3 Revamp shows history snapshots in the bottom Timeline zone
  */
 
 test.describe('Timeline in Playground', () => {
@@ -14,23 +14,23 @@ test.describe('Timeline in Playground', () => {
     await page.goto('/playground');
   });
 
-  test('playground shows task time estimates', async ({ page }) => {
-    // Add an operation that generates metrics
-    await page.getByTestId('add-groupby').click();
+  test('playground shows history section', async ({ page }) => {
+    // History section should be visible
+    await expect(page.getByText('History')).toBeVisible();
     
-    // Should show task time metrics in Impact Panel
-    await expect(page.getByText('Task Time Range')).toBeVisible();
+    // Should show initial message about snapshots
+    await expect(page.getByText(/Click.*Snapshot/i)).toBeVisible();
   });
 
-  test('task time varies with skew from presets', async ({ page }) => {
-    // Load high skew preset
-    await page.getByTestId('preset-high-skew').click();
+  test('snapshot button saves current state', async ({ page }) => {
+    // Add an operation
+    await page.getByTestId('add-groupby').click();
     
-    // High skew preset (10.0x skew) should show in data shape
-    await expect(page.getByText('10.0x skew')).toBeVisible();
+    // Click snapshot button
+    await page.getByTestId('save-snapshot').click();
     
-    // Task time should still be displayed in Impact Panel
-    await expect(page.getByText('Task Time Range')).toBeVisible();
+    // Should show snapshot entry
+    await expect(page.getByText('Snapshot 1')).toBeVisible();
   });
 });
 
@@ -40,11 +40,8 @@ test.describe('Timeline Component Existence', () => {
     await page.goto('/playground');
     await expect(page.getByRole('heading', { name: /DataFrame Shape Playground/i })).toBeVisible();
     
-    // Add operations to see the DAG
-    await page.getByTestId('add-groupby').click();
-    
-    // Check for stage boundary in DAG (shuffle indicator)
-    await expect(page.getByTestId('stage-boundary')).toBeVisible();
+    // Execution DAG section should be visible
+    await expect(page.getByTestId('execution-dag')).toBeVisible();
   });
 
   test('Playground renders without console errors', async ({ page }) => {

@@ -65,7 +65,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 }
 
-function MiniDAG({ nodes, operations }: { nodes: ChainDAGNode[]; operations: Operation[] }) {
+function MiniDAG({ nodes, operations: _operations }: { nodes: ChainDAGNode[]; operations: Operation[] }) {
   let lastStage = -1;
 
   return (

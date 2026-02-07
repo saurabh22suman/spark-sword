@@ -2,11 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Book, BarChart2, Zap, Clock, AlertTriangle, Layers, ArrowRight, CheckCircle, XCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Card, CardContent, Badge, Button, PageHeader, PageContainer } from '@/components/ui';
 import type { ScenarioSummary, ScenarioWithSimulation } from '@/types';
 import { ScenarioDAG } from '@/components/scenarios';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// Utility functions - kept for potential future use
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
   const k = 1024;
@@ -15,21 +21,22 @@ function formatBytes(bytes: number): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function formatMs(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
 function LevelBadge({ level }: { level: string }) {
-  const colors = {
-    basic: 'bg-green-500/20 text-green-400 border-green-500/50',
-    intermediate: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
-    advanced: 'bg-red-500/20 text-red-400 border-red-500/50',
+  const variants = {
+    basic: 'success' as const,
+    intermediate: 'warning' as const,
+    advanced: 'danger' as const,
   };
   return (
-    <span className={`px-2 py-0.5 text-xs font-medium rounded border ${colors[level as keyof typeof colors] || colors.basic}`}>
+    <Badge variant={variants[level as keyof typeof variants] || 'success'} size="sm">
       {level.toUpperCase()}
-    </span>
+    </Badge>
   );
 }
 
@@ -43,168 +50,238 @@ function ScenarioCard({
   onClick: () => void;
 }) {
   return (
-    <button
+    <motion.button
       onClick={onClick}
-      data-testid="scenario-card"
-      className={`w-full text-left p-4 rounded-lg border transition-all ${
-        isSelected 
-          ? 'border-spark-orange bg-spark-orange/10' 
-          : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
-      }`}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.98 }}
+      className="w-full"
     >
-      <div className="flex items-start justify-between mb-2">
-        <h3 className="font-semibold text-white">{scenario.title}</h3>
+      <Card
+        hover
+        variant={isSelected ? "bordered" : "default"}
+        className={cn(
+          "text-left transition-all duration-200 group",
+          isSelected && "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm"
+        )}
+      >
+        <CardContent className="flex flex-col gap-3">
+      <div className="flex items-start justify-between w-full">
+        <h3 className={cn(
+          "font-bold text-lg",
+          isSelected ? "text-blue-700 dark:text-blue-300" : "text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400"
+        )}>
+          {scenario.title}
+        </h3>
         <LevelBadge level={scenario.level} />
       </div>
-      <p className="text-sm text-slate-400 mb-3">{scenario.real_world_context}</p>
-      <div className="flex flex-wrap gap-1">
-        {scenario.spark_concepts.map((concept, i) => (
-          <span 
-            key={i}
-            className="px-2 py-0.5 text-xs bg-slate-700 text-slate-300 rounded"
-          >
+      
+      <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+        {scenario.real_world_context}
+      </p>
+      
+      <div className="flex flex-wrap gap-2 mt-2">
+        {scenario.spark_concepts.slice(0, 3).map((concept, i) => (
+          <Badge key={i} variant="default" size="sm">
             {concept}
-          </span>
+          </Badge>
         ))}
+        {scenario.spark_concepts.length > 3 && (
+             <span className="px-2 py-0.5 text-xs text-slate-400">+ {scenario.spark_concepts.length - 3}</span>
+        )}
       </div>
-    </button>
+        </CardContent>
+      </Card>
+    </motion.button>
   );
 }
 
 function ScenarioDetail({ data }: { data: ScenarioWithSimulation }) {
-  const { scenario, simulation, dag } = data;
+  const { scenario, dag } = data;
+  const [explanationRevealed, setExplanationRevealed] = useState(false);
+  
+  // Reset reveal state when scenario changes
+  useEffect(() => {
+    setExplanationRevealed(false);
+  }, [scenario.id]);
   
   return (
-    <div className="space-y-6">
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-8"
+    >
       {/* Header */}
       <div>
-        <div className="flex items-center gap-3 mb-2">
-          <h2 className="text-2xl font-bold text-white">{scenario.title}</h2>
-          <LevelBadge level={scenario.level} />
+        <div className="flex items-center gap-3 mb-3">
+          <Book className="w-5 h-5 text-blue-500" />
+          <span className="text-sm font-semibold text-blue-500 uppercase tracking-wide">Learner Scenario</span>
         </div>
-        <p className="text-slate-400">{scenario.real_world_context}</p>
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">{scenario.title}</h2>
+        <div className="flex flex-wrap gap-4 text-sm text-slate-500 dark:text-slate-400">
+           <div className="flex items-center gap-1.5">
+              <Layers className="w-4 h-4" />
+              <span>{scenario.level} Level</span>
+           </div>
+           <div className="flex items-center gap-1.5">
+              <Clock className="w-4 h-4" />
+              <span>~5 min read</span>
+           </div>
+        </div>
       </div>
 
       {/* Story */}
-      <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-2">
-          📖 Story
-        </h3>
-        <p className="text-slate-300">{scenario.story}</p>
-      </div>
+      <Card variant="default">
+        <CardContent>
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+               <span className="text-lg">📖</span> The Context
+          </h3>
+          <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed font-light">
+            {scenario.story}
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Scenario DAG per scenario-dag-spec.md */}
       {dag && (
-        <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700">
-          <ScenarioDAG dag={dag} />
-        </div>
+        <Card variant="default" className="relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <CardContent>
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
+              Visual Execution Plan
+            </h3>
+            <ScenarioDAG dag={dag} />
+          </CardContent>
+        </Card>
       )}
 
-      {/* Operations */}
-      <div>
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-2">
-          Code Pattern
-        </h3>
-        <div className="bg-slate-900 rounded-lg p-4 font-mono text-sm">
-          {scenario.logical_operations.map((op, i) => (
-            <div key={i} className="text-green-400">
-              {op}
+      {/* Learning Goals */}
+      {scenario.learning_goals && scenario.learning_goals.length > 0 && (
+        <Card variant="gradient" className="bg-gradient-to-br from-blue-50 to-white dark:from-slate-800 dark:to-slate-900/50 border-blue-100 dark:border-slate-700">
+          <CardContent>
+            <h3 className="text-xs font-bold text-blue-500 dark:text-blue-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                 <Zap className="w-4 h-4" /> Learning Objectives
+            </h3>
+            <ul className="space-y-3">
+              {scenario.learning_goals.map((goal, i) => (
+                <li key={i} className="flex items-start gap-3 text-slate-700 dark:text-slate-300">
+                  <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">
+                    {i + 1}
+                  </div>
+                  <span className="leading-relaxed">{goal}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Key Takeaways */}
+      {scenario.key_takeaways && scenario.key_takeaways.length > 0 && (
+        <Card variant="gradient" className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/10 dark:to-slate-900/50 border-emerald-200 dark:border-emerald-800/50">
+          <CardContent>
+            <h3 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" /> Key Takeaways — Remember These
+            </h3>
+            <ul className="space-y-3">
+              {scenario.key_takeaways.map((takeaway, i) => (
+                <li key={i} className="flex items-start gap-3 text-slate-700 dark:text-slate-300">
+                  <span className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">
+                    {i + 1}
+                  </span>
+                  <span className="leading-relaxed">{takeaway}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Common Mistakes */}
+      {scenario.common_mistakes && scenario.common_mistakes.length > 0 && (
+        <Card variant="gradient" className="bg-gradient-to-br from-red-50 to-white dark:from-red-900/10 dark:to-slate-900/50 border-red-200 dark:border-red-800/50">
+          <CardContent>
+            <h3 className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <XCircle className="w-4 h-4" /> Common Mistakes — Avoid These
+            </h3>
+            <ul className="space-y-3">
+              {scenario.common_mistakes.map((mistake, i) => (
+                <li key={i} className="flex items-start gap-3 text-slate-700 dark:text-slate-300">
+                  <span className="text-red-400 dark:text-red-500 shrink-0 mt-0.5">✗</span>
+                  <span className="leading-relaxed">{mistake}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Spark's Explanation - Per scenario-to-playground-bridge-spec Section 2 */}
+      <Card variant="gradient" className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/20 dark:to-slate-900/50 border-amber-200 dark:border-amber-800/50">
+        <CardContent>
+          <h3 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" /> What Spark Does (And Why)
+          </h3>
+          
+          {!explanationRevealed ? (
+            <div className="text-center py-6">
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                Think about how Spark might execute this scenario before revealing the explanation.
+              </p>
+              <Button
+                onClick={() => setExplanationRevealed(true)}
+                variant="secondary"
+                size="md"
+                data-testid="reveal-explanation"
+              >
+                🔍 Reveal Explanation
+              </Button>
             </div>
-          ))}
-        </div>
-      </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                {scenario.explanation_goal}
+              </p>
+              {scenario.evidence_signals && scenario.evidence_signals.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-amber-200 dark:border-amber-800/50">
+                  <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-2">Evidence signals:</p>
+                  <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                    {scenario.evidence_signals.map((signal, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <span className="text-amber-500">•</span> {signal}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Expected Behavior */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700 text-center">
-          <div className="text-3xl font-bold text-white">{scenario.expected_stages}</div>
-          <div className="text-sm text-slate-400">Stages</div>
-        </div>
-        <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700 text-center">
-          <div className="text-3xl font-bold text-white">{scenario.expected_shuffles}</div>
-          <div className="text-sm text-slate-400">Shuffles</div>
-        </div>
-        <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700 text-center">
-          <div className={`text-3xl font-bold ${scenario.expected_skew ? 'text-red-400' : 'text-green-400'}`}>
-            {scenario.expected_skew ? 'Yes' : 'No'}
-          </div>
-          <div className="text-sm text-slate-400">Skew</div>
-        </div>
-      </div>
+      {/* Try in Playground - Only shown after explanation revealed */}
+      <AnimatePresence>
+        {explanationRevealed && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex justify-end pt-4"
+          >
+            <Link 
+              href={`/playground?scenario=${scenario.id}`}
+              className="inline-flex items-center px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-medium rounded-full hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-lg hover:shadow-xl hover:-translate-y-1"
+              data-testid="explore-playground"
+            >
+              Explore in Playground <ArrowRight className="ml-2 w-4 h-4" />
+            </Link>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Simulation Preview */}
-      <div className="bg-gradient-to-r from-slate-800/80 to-slate-900/80 rounded-lg p-4 border border-slate-700">
-        <h3 className="text-sm font-semibold text-spark-yellow uppercase tracking-wide mb-3">
-          ⚡ Simulation Preview
-        </h3>
-        
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <div className="text-sm text-slate-400">Shuffle Bytes</div>
-            <div className="text-xl font-semibold text-white">{formatBytes(simulation.shuffle_bytes)}</div>
-          </div>
-          <div>
-            <div className="text-sm text-slate-400">Task Time Range</div>
-            <div className="text-xl font-semibold text-white">
-              {formatMs(simulation.estimated_min_task_ms)} - {formatMs(simulation.estimated_max_task_ms)}
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div>
-            <div className="text-xs text-slate-500 uppercase">Spark Path</div>
-            <p className="text-sm text-slate-300">{simulation.spark_path_explanation}</p>
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 uppercase">Dominant Factor</div>
-            <p className="text-sm text-slate-300">{simulation.dominant_factor}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 mt-3">
-          <span className="text-xs text-slate-500">Confidence:</span>
-          <span className={`text-xs px-2 py-0.5 rounded ${
-            simulation.confidence === 'high' ? 'bg-green-500/20 text-green-400' :
-            simulation.confidence === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-            'bg-red-500/20 text-red-400'
-          }`}>
-            {simulation.confidence}
-          </span>
-        </div>
-      </div>
-
-      {/* Evidence Signals */}
-      <div>
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-2">
-          🔍 Evidence Signals
-        </h3>
-        <ul className="space-y-1">
-          {scenario.evidence_signals.map((signal, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
-              <span className="text-spark-orange mt-0.5">•</span>
-              {signal}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Learning Goal */}
-      <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg p-4 border border-purple-500/30">
-        <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wide mb-2">
-          🎯 What You'll Learn
-        </h3>
-        <p className="text-slate-300">{scenario.explanation_goal}</p>
-      </div>
-
-      {/* Action Button */}
-      <Link
-        href={`/playground?scenario=${scenario.id}`}
-        className="block w-full text-center bg-spark-orange hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-      >
-        Open in Playground →
-      </Link>
-    </div>
+    </motion.div>
   );
 }
 
@@ -215,106 +292,100 @@ export default function ScenariosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch all scenarios on mount
+  // Fetch list on mount
   useEffect(() => {
-    async function fetchScenarios() {
-      try {
-        const response = await fetch(`${API_BASE}/scenarios/`);
-        if (!response.ok) throw new Error('Failed to fetch scenarios');
-        const data = await response.json();
+    fetch(`${API_BASE}/api/scenarios/list`)
+      .then(res => res.json())
+      .then(data => {
         setScenarios(data);
-        // Auto-select first scenario
         if (data.length > 0) {
-          setSelectedId(data[0].id);
+          setSelectedId(prev => prev ?? data[0].id);
         }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
         setLoading(false);
-      }
-    }
-    fetchScenarios();
+      })
+      .catch(err => {
+        console.error('Failed to fetch scenarios:', err);
+        setError('Failed to load scenarios. Please try again later.');
+        setLoading(false);
+      });
   }, []);
 
-  // Fetch selected scenario details
+  // Fetch detail when selected
   useEffect(() => {
     if (!selectedId) return;
     
-    async function fetchScenarioDetail() {
-      try {
-        const response = await fetch(`${API_BASE}/scenarios/${selectedId}`);
-        if (!response.ok) throw new Error('Failed to fetch scenario');
-        const data = await response.json();
-        setSelectedScenario(data);
-      } catch (err) {
-        console.error('Error fetching scenario:', err);
-      }
-    }
-    fetchScenarioDetail();
+    fetch(`${API_BASE}/api/scenarios/${selectedId}`)
+      .then(res => res.json())
+      .then(setSelectedScenario)
+      .catch(console.error);
   }, [selectedId]);
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-        <div className="text-white">Loading scenarios...</div>
-      </main>
-    );
+     return (
+        <div className="flex items-center justify-center min-h-screen">
+             <div className="flex flex-col items-center gap-4">
+                 <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                 <p className="text-slate-500 animate-pulse">Loading scenarios...</p>
+             </div>
+        </div>
+     );
   }
 
   if (error) {
-    return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-        <div className="text-red-400">Error: {error}</div>
-      </main>
-    );
+     return (
+        <div className="flex items-center justify-center min-h-screen">
+             <div className="p-6 bg-red-50 dark:bg-red-900/10 rounded-2xl flex items-center gap-4">
+                 <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                 <p className="text-red-700 dark:text-red-300 font-medium">{error}</p>
+             </div>
+        </div>
+     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Link href="/" className="text-slate-400 hover:text-white transition-colors">
-              ← Back
-            </Link>
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Real-Life Scenarios</h1>
-          <p className="text-slate-400 max-w-2xl">
-            Learn Spark internals through practical examples. Each scenario teaches a specific concept
-            with simulated execution data and evidence-based insights.
-          </p>
-        </div>
+    <PageContainer>
+      <PageHeader
+        title="Learning Scenarios"
+        description="Master Spark optimization patterns through real-world examples. From skew mitigation to join strategies, see the theory in action."
+      />
 
-        {/* Two-column layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Scenario List */}
-          <div className="lg:col-span-1 space-y-3">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
-              Select a Scenario
-            </h2>
-            {scenarios.map((scenario) => (
-              <ScenarioCard
-                key={scenario.id}
-                scenario={scenario}
-                isSelected={scenario.id === selectedId}
-                onClick={() => setSelectedId(scenario.id)}
-              />
-            ))}
+      <div className="grid lg:grid-cols-12 gap-8">
+          {/* List Sidebar */}
+          <div className="lg:col-span-4 space-y-4">
+             <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-2 mb-2">
+               Available Lessons
+             </h2>
+            <div className="space-y-3">
+              {scenarios.map(s => (
+                <ScenarioCard
+                    key={s.id}
+                    scenario={s}
+                    isSelected={selectedId === s.id}
+                    onClick={() => {
+                        setSelectedId(s.id);
+                        setSelectedScenario(null); // Clear while loading
+                    }}
+                />
+              ))}
+            </div>
           </div>
 
-          {/* Scenario Detail */}
-          <div className="lg:col-span-2">
-            {selectedScenario ? (
-              <ScenarioDetail data={selectedScenario} />
-            ) : (
-              <div className="text-slate-400 text-center py-12">
-                Select a scenario to see details
-              </div>
-            )}
+          {/* Detail View */}
+          <div className="lg:col-span-8">
+            <AnimatePresence mode="wait">
+              {selectedScenario ? (
+                <ScenarioDetail key={selectedScenario.scenario.id} data={selectedScenario} />
+              ) : (
+                <Card variant="default" className="h-96 flex items-center justify-center border-dashed">
+                  <CardContent className="text-center text-slate-400">
+                    <BarChart2 className="w-10 h-10 mx-auto mb-4 opacity-50" />
+                    <p>Loading scenario details...</p>
+                  </CardContent>
+                </Card>
+              )}
+            </AnimatePresence>
           </div>
         </div>
-      </div>
-    </main>
+    </PageContainer>
   );
 }

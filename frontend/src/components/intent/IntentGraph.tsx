@@ -10,7 +10,6 @@
 
 'use client';
 
-import { useState } from 'react';
 import type { IntentGraphNode, EditableAssumptions, SparkConsequence } from '@/types';
 
 // Operation icons per spec Section 4.1

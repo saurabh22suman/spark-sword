@@ -8,6 +8,7 @@
 
 import { memo } from 'react';
 import { Handle, Position } from 'reactflow';
+import { cn } from '@/lib/utils';
 import type { DAGNodeData } from '@/types';
 
 interface StageNodeProps {
@@ -47,79 +48,80 @@ function StageNodeComponent({ data, selected }: StageNodeProps) {
   
   // Border color based on shuffle
   const borderColor = hasShuffle 
-    ? 'border-red-500 shadow-red-500/20' 
-    : 'border-slate-600';
+    ? 'border-red-500/50 dark:border-red-500/50 shadow-sm shadow-red-500/10' 
+    : 'border-border';
   
   return (
     <div 
-      className={`
-        px-4 py-3 rounded-lg border-2 bg-slate-800 min-w-[180px]
-        ${borderColor}
-        ${selected ? 'ring-2 ring-blue-500' : ''}
-        transition-all duration-200 hover:shadow-lg
-      `}
+      className={cn(
+        "px-4 py-3 rounded-lg border-2 min-w-[180px] transition-all duration-200",
+        "bg-card text-card-foreground",
+        borderColor,
+        selected ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50',
+        selected ? 'shadow-lg shadow-primary/10' : 'hover:shadow-md'
+      )}
     >
       {/* Input handle */}
       <Handle
         type="target"
         position={Position.Left}
-        className="w-3 h-3 bg-slate-500 border-2 border-slate-700"
+        className="!w-3 !h-3 !bg-muted-foreground !border-2 !border-background"
       />
       
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-mono text-slate-400">
+        <span className="text-xs font-mono text-muted-foreground font-semibold">
           Stage {metadata.stage_id ?? data.id}
         </span>
-        <span className={`w-2 h-2 rounded-full ${statusColor}`} title={status} />
+        <span className={cn("w-2 h-2 rounded-full ring-2 ring-background", statusColor)} title={status} />
       </div>
       
       {/* Label */}
-      <div className="text-sm font-medium text-white truncate mb-2" title={data.label}>
+      <div className="text-sm font-bold truncate mb-2" title={data.label}>
         {data.label || 'Stage'}
       </div>
       
       {/* Metrics */}
-      <div className="space-y-1 text-xs text-slate-400">
+      <div className="space-y-1 text-xs text-muted-foreground/80">
         {metadata.num_tasks && (
           <div className="flex justify-between">
             <span>Tasks:</span>
-            <span className="text-slate-300">{metadata.num_tasks}</span>
+            <span className="font-mono text-foreground">{metadata.num_tasks}</span>
           </div>
         )}
         
         {metadata.duration_ms && (
           <div className="flex justify-between">
             <span>Duration:</span>
-            <span className="text-slate-300">{formatDuration(metadata.duration_ms)}</span>
+            <span className="font-mono text-foreground">{formatDuration(metadata.duration_ms)}</span>
           </div>
         )}
         
         {(metadata.input_bytes ?? 0) > 0 && (
           <div className="flex justify-between">
             <span>Input:</span>
-            <span className="text-slate-300">{formatBytes(metadata.input_bytes!)}</span>
+            <span className="font-mono text-foreground">{formatBytes(metadata.input_bytes!)}</span>
           </div>
         )}
         
         {(metadata.shuffle_write_bytes ?? 0) > 0 && (
-          <div className="flex justify-between text-red-400">
+          <div className="flex justify-between text-yellow-600 dark:text-yellow-500 font-medium">
             <span>Shuffle:</span>
-            <span>{formatBytes(metadata.shuffle_write_bytes!)}</span>
+            <span className="font-mono">{formatBytes(metadata.shuffle_write_bytes!)}</span>
           </div>
         )}
-        
+
         {(metadata.spill_bytes ?? 0) > 0 && (
-          <div className="flex justify-between text-yellow-400">
+          <div className="flex justify-between text-red-600 dark:text-red-500 font-medium">
             <span>Spill:</span>
-            <span>{formatBytes(metadata.spill_bytes!)}</span>
+            <span className="font-mono">{formatBytes(metadata.spill_bytes!)}</span>
           </div>
         )}
       </div>
-      
+
       {/* Shuffle indicator */}
       {hasShuffle && (
-        <div className="mt-2 px-2 py-1 bg-red-500/20 rounded text-xs text-red-400 text-center">
+        <div className="mt-2 px-2 py-1 bg-red-500/10 rounded text-[10px] font-bold text-red-600 dark:text-red-400 text-center uppercase tracking-wider border border-red-500/20">
           Shuffle Boundary
         </div>
       )}
@@ -128,7 +130,7 @@ function StageNodeComponent({ data, selected }: StageNodeProps) {
       <Handle
         type="source"
         position={Position.Right}
-        className="w-3 h-3 bg-slate-500 border-2 border-slate-700"
+        className="!w-3 !h-3 !bg-muted-foreground !border-2 !border-background"
       />
     </div>
   );

@@ -1,62 +1,52 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Learning Mode E2E Tests (Updated for PlaygroundV3)
+ * Learning Mode E2E Tests (Updated for PlaygroundV3 Revamp)
  * 
- * Tests for progressive disclosure - Standard mode vs Expert mode.
- * PlaygroundV3 uses Standard/Expert toggle instead of Learning/Expert.
- * 
- * Per work-ahead.md:
- * - Experts should never feel slowed
- * - Beginners should never feel lost
+ * Tests for progressive disclosure - Learning mode vs Expert mode.
+ * PlaygroundV3 Revamp uses Learning/Expert toggle via data-testid="mode-toggle".
  */
 test.describe('Learning Mode Toggle', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/playground');
   });
 
-  test('mode toggle is visible', async ({ page }) => {
-    // Use exact match to find the Standard mode button
-    await expect(page.getByRole('button', { name: 'Standard', exact: true })).toBeVisible();
+  test('playground page loads', async ({ page }) => {
+    // Verify playground page loads by checking the heading
+    await expect(page.getByRole('heading', { name: /DataFrame Shape Playground/i })).toBeVisible();
   });
 
-  test('default mode is Standard', async ({ page }) => {
-    // Standard mode should be the default for learning
-    await expect(page.getByRole('button', { name: 'Standard', exact: true })).toBeVisible();
+  test('mode toggle is visible', async ({ page }) => {
+    // Use test ID to find the mode toggle
+    await expect(page.getByTestId('mode-toggle')).toBeVisible();
+  });
+
+  test('default mode is Learning', async ({ page }) => {
+    // Learning mode should be the default
+    await expect(page.getByTestId('mode-toggle')).toContainText('Learning');
   });
 
   test('clicking toggle switches to Expert mode', async ({ page }) => {
     // Click the toggle
-    await page.getByRole('button', { name: 'Standard', exact: true }).click();
+    await page.getByTestId('mode-toggle').click();
     
-    // Should switch to Expert mode (button text changes)
-    await expect(page.getByRole('button', { name: 'Expert', exact: true })).toBeVisible();
-  });
-
-  test('expert mode shows additional controls', async ({ page }) => {
-    // Switch to Expert mode
-    await page.getByRole('button', { name: 'Standard', exact: true }).click();
-    
-    // Expert mode shows the button with Expert text
-    await expect(page.getByRole('button', { name: 'Expert', exact: true })).toBeVisible();
+    // Should switch to Expert mode
+    await expect(page.getByTestId('mode-toggle')).toContainText('Expert');
   });
 });
 
-test.describe('Learning Mode on Config Page', () => {
+test.describe('Config Page', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/config');
   });
 
-  test('mode toggle is visible on config page', async ({ page }) => {
-    // The config page should have a mode toggle
-    await expect(page.getByRole('button', { name: /Standard|Expert/i }).first()).toBeVisible();
+  test('config page loads', async ({ page }) => {
+    // Check that the config page loads by checking heading
+    await expect(page.getByRole('heading', { name: /Spark Config Simulator/i })).toBeVisible();
   });
 
-  test('config page shows config explanations', async ({ page }) => {
-    // Check that the config page has explanations for beginners
-    await expect(page.getByRole('heading', { name: 'Spark Config Simulator' })).toBeVisible();
-    
-    // Should show a config option (use first() since there may be multiple)
-    await expect(page.getByText('spark.sql.shuffle.partitions').first()).toBeVisible();
+  test('shows spark config options', async ({ page }) => {
+    // Should show spark config options
+    await expect(page.getByText(/shuffle\.partitions|spark\./i).first()).toBeVisible();
   });
 });

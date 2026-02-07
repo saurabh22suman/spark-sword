@@ -17,13 +17,12 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   MarkerType,
-  Position,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 import { StageNode } from './StageNode';
 import { JobNode } from './JobNode';
-import type { DAGData, DAGNodeData, DAGEdgeData, DAGNodeWrapper } from '@/types';
+import type { DAGData, DAGNodeData, DAGNodeWrapper } from '@/types';
 
 // Custom node types
 const nodeTypes = {
@@ -69,7 +68,7 @@ function convertToReactFlow(data: DAGData, selectedNodeId?: string | null): { no
   const STAGE_WIDTH = 200;
   const STAGE_GAP = 50;
   
-  jobNodes.forEach((jobWrapper, jobIndex) => {
+  jobNodes.forEach((jobWrapper, _jobIndex) => {
     const jobId = parseInt(jobWrapper.id.replace('job-', ''));
     const stages = stagesByJob.get(jobId) || [];
     const isSelected = selectedNodeId === jobWrapper.id;
@@ -143,8 +142,8 @@ export function DAGVisualization({
     [data, selectedNodeId]
   );
   
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, _setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, _setEdges, onEdgesChange] = useEdgesState(initialEdges);
   
   const handleNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {

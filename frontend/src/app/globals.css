@@ -2,31 +2,175 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --spark-orange: #E25A1C;
-  --spark-yellow: #FFB100;
-  --spark-dark: #1A1A2E;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    
+    /* Spark semantic colors (per landing-oage-animation-spec.md) */
+    --spark-flow: 217 91% 60%;        /* Blue - normal flow */
+    --spark-shuffle: 27 96% 61%;      /* Orange - shuffle / data movement */
+    --spark-pressure: 0 84% 60%;      /* Red - pressure / skew / spill */
+    --spark-broadcast: 271 91% 65%;   /* Purple - broadcast */
+    --spark-completed: 215 14% 55%;   /* Muted gray - completed */
+    --spark-warning: 45 93% 47%;      /* Yellow - warning state */
+    
+    /* Animation timing */
+    --animation-fast: 150ms;
+    --animation-normal: 300ms;
+    --animation-slow: 500ms;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+ 
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+ 
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+ 
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+ 
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+ 
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+ 
+    --radius: 0.5rem;
+  }
+ 
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    
+    /* Spark semantic colors (dark mode) */
+    --spark-flow: 217 91% 60%;        /* Blue - normal flow */
+    --spark-shuffle: 27 96% 61%;      /* Orange - shuffle / data movement */
+    --spark-pressure: 0 84% 60%;      /* Red - pressure / skew / spill */
+    --spark-broadcast: 271 91% 65%;   /* Purple - broadcast */
+    --spark-completed: 215 14% 55%;   /* Muted gray - completed */
+    --spark-warning: 45 93% 47%;      /* Yellow - warning state */
+ 
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+ 
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+ 
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+ 
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+ 
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+ 
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+ 
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+ 
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
 }
 
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
-/* Custom scrollbar for dark theme */
+/* Custom scrollbar derived from theme */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #2d2d44;
+  @apply bg-transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4a4a6a;
-  border-radius: 4px;
+  @apply bg-slate-200 dark:bg-slate-700 rounded-full hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #5a5a7a;
+/* Animations */
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
 }
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Spark Animation Keyframes */
+@keyframes spark-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes spark-flow {
+  0% { stroke-dashoffset: 100; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes spark-data-move {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(var(--move-distance, 100px)); }
+}
+
+@keyframes spark-spill {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(var(--spill-distance, 50px)); opacity: 0.7; }
+}
+
+@keyframes spark-pressure-build {
+  0% { transform: scaleY(1); }
+  100% { transform: scaleY(var(--pressure-scale, 1.5)); }
+}
+
+/* Spark color utilities */
+.spark-flow { color: hsl(var(--spark-flow)); fill: hsl(var(--spark-flow)); stroke: hsl(var(--spark-flow)); }
+.spark-shuffle { color: hsl(var(--spark-shuffle)); fill: hsl(var(--spark-shuffle)); stroke: hsl(var(--spark-shuffle)); }
+.spark-pressure { color: hsl(var(--spark-pressure)); fill: hsl(var(--spark-pressure)); stroke: hsl(var(--spark-pressure)); }
+.spark-broadcast { color: hsl(var(--spark-broadcast)); fill: hsl(var(--spark-broadcast)); stroke: hsl(var(--spark-broadcast)); }
+.spark-completed { color: hsl(var(--spark-completed)); fill: hsl(var(--spark-completed)); stroke: hsl(var(--spark-completed)); }
+.spark-warning { color: hsl(var(--spark-warning)); fill: hsl(var(--spark-warning)); stroke: hsl(var(--spark-warning)); }

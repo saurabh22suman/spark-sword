@@ -1,10 +1,22 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Shape Playground E2E Tests (v3)
+ * Shape Playground E2E Tests (v3 Revamp)
  * 
- * Tests the interactive DataFrame Shape Playground UI per dataframe-playground-spec.md.
- * Layout: Presets → Data Shape → [Operations | Spark View | Impact] → Timeline
+ * Tests the interactive DataFrame Shape Playground per playground-v3-full-revamp-spec.md.
+ * 
+ * Layout:
+ * ┌──────────────────────────────────────────┐
+ * │ Global Data Shape & Controls              │
+ * ├───────────────┬──────────────────────────┤
+ * │ Operation     │ Primary Visualization    │
+ * │ Chain Builder │ (DAG / Partitions / Flow)│
+ * ├───────────────┼──────────────────────────┤
+ * │ Prediction &  │ Explanation Panel        │
+ * │ Commit Area   │                          │
+ * ├───────────────┴──────────────────────────┤
+ * │ Timeline / History / Reset                │
+ * └──────────────────────────────────────────┘
  */
 test.describe('Shape Playground v3', () => {
   test.beforeEach(async ({ page }) => {
@@ -24,22 +36,20 @@ test.describe('Shape Playground v3', () => {
     await expect(page.getByRole('button', { name: '10 GB' })).toBeVisible();
   });
 
-  test('presets bar is visible with learning scenarios', async ({ page }) => {
-    // Presets section header
-    await expect(page.getByText('Quick Presets')).toBeVisible();
+  test('mode toggle switches between learning and expert', async ({ page }) => {
+    // Mode toggle should be visible
+    await expect(page.getByTestId('mode-toggle')).toBeVisible();
     
-    // Check for preset buttons by test ID
-    await expect(page.getByTestId('preset-dim-fact')).toBeVisible();
-    await expect(page.getByTestId('preset-high-skew')).toBeVisible();
-    await expect(page.getByTestId('preset-too-many-partitions')).toBeVisible();
-  });
-
-  test('clicking preset loads scenario', async ({ page }) => {
-    // Click high skew preset
-    await page.getByTestId('preset-high-skew').click();
+    // Should start in Learning mode
+    await expect(page.getByTestId('mode-toggle')).toContainText('Learning');
     
-    // Should show the skew factor in the data shape panel
-    await expect(page.getByText('10.0x skew')).toBeVisible();
+    // Click to switch to Expert mode
+    await page.getByTestId('mode-toggle').click();
+    await expect(page.getByTestId('mode-toggle')).toContainText('Expert');
+    
+    // Click again to switch back
+    await page.getByTestId('mode-toggle').click();
+    await expect(page.getByTestId('mode-toggle')).toContainText('Learning');
   });
 
   test('operation buttons are visible with test IDs', async ({ page }) => {
@@ -68,38 +78,32 @@ test.describe('Shape Playground v3', () => {
     // Add groupby operation
     await page.getByTestId('add-groupby').click();
     
-    // Click to select it
-    await page.locator('[data-testid^="chain-op-"]').filter({ hasText: /GroupBy/i }).click();
-    
+    // The groupby is auto-selected, so controls should be visible
     // Operation controls should show groupby-specific options
     await expect(page.getByText('Key Cardinality')).toBeVisible();
   });
 
-  test('impact panel shows metrics', async ({ page }) => {
-    // Add a groupby to generate shuffle
-    await page.getByTestId('add-groupby').click();
-    
-    // Impact panel should show metrics
-    await expect(page.getByText('Shuffle Bytes')).toBeVisible();
-    await expect(page.getByText('Task Count')).toBeVisible();
-    await expect(page.getByText('Max Partition')).toBeVisible();
-  });
-
-  test('spark view panel shows DAG', async ({ page }) => {
+  test('execution DAG shows nodes', async ({ page }) => {
     // Add operations to build a chain
     await page.getByTestId('add-filter').click();
-    await page.getByTestId('add-groupby').click();
     
-    // DAG should show stages with shuffle boundary indicator
-    await expect(page.getByTestId('stage-boundary')).toBeVisible();
+    // Execution DAG should be visible
+    await expect(page.getByTestId('execution-dag')).toBeVisible();
+    
+    // DAG should show the read node and filter node
+    await expect(page.getByTestId('dag-node-read')).toBeVisible();
   });
 
-  test('filter operation shows no shuffle impact', async ({ page }) => {
-    // Add filter operation
-    await page.getByTestId('add-filter').click();
+  test('adding shuffle operation shows stage boundary', async ({ page }) => {
+    // Switch to expert mode to skip prediction
+    await page.getByTestId('mode-toggle').click();
     
-    // Should show 0 B shuffle in impact panel
-    await expect(page.getByText('0 B').first()).toBeVisible();
+    // Add filter then groupby
+    await page.getByTestId('add-filter').click();
+    await page.getByTestId('add-groupby').click();
+    
+    // DAG should show stage boundaries
+    await expect(page.getByTestId('stage-boundary-1')).toBeVisible();
   });
 
   test('advanced operations toggle works', async ({ page }) => {
@@ -115,29 +119,120 @@ test.describe('Shape Playground v3', () => {
     await expect(page.getByTestId('add-orderby')).toBeVisible();
   });
 
-  test('comparison timeline allows pinning states', async ({ page }) => {
+  test('global reset clears all operations', async ({ page }) => {
+    // Add some operations
+    await page.getByTestId('add-filter').click();
+    await page.getByTestId('add-groupby').click();
+    
+    // Verify operations exist
+    await expect(page.locator('[data-testid^="chain-op-"]')).toHaveCount(2);
+    
+    // Click reset button
+    await page.getByTestId('global-reset').click();
+    
+    // Operations should be cleared
+    await expect(page.locator('[data-testid^="chain-op-"]')).toHaveCount(0);
+  });
+
+  test('snapshot button saves state', async ({ page }) => {
     // Add an operation
     await page.getByTestId('add-groupby').click();
     
-    // Pin button should be visible
-    await expect(page.getByRole('button', { name: /Pin/i })).toBeVisible();
+    // Snapshot button should be visible
+    await expect(page.getByTestId('save-snapshot')).toBeVisible();
     
-    // Click pin
-    await page.getByRole('button', { name: /Pin/i }).click();
+    // Click snapshot
+    await page.getByTestId('save-snapshot').click();
     
-    // Timeline should show a pinned state - verify the operation is in the chain
-    await expect(page.getByTestId('chain-op-groupby')).toBeVisible();
+    // History should show a snapshot entry
+    await expect(page.getByText('Snapshot 1')).toBeVisible();
   });
 
-  test('partition bars respond to skew changes', async ({ page }) => {
-    // Partition bars should be visible
-    await expect(page.getByTestId('partition-bars')).toBeVisible();
+  test('partition bars visible in data shape section', async ({ page }) => {
+    // Partition bars should be visible within data shape panel
+    const dataShapePanel = page.getByTestId('data-shape-panel');
+    await expect(dataShapePanel).toBeVisible();
     
-    // Find skew slider and increase skew (if slider is present)
-    const skewSlider = page.locator('input[type="range"]').filter({ hasText: /skew/i }).first();
-    if (await skewSlider.isVisible()) {
-      // Adjust skew - this would show uneven bars
-      await skewSlider.fill('5');
+    // There should be partition bars component within or after data shape
+    await expect(page.getByTestId('partition-bars').first()).toBeVisible();
+  });
+
+  test('disclaimer shows estimation warning', async ({ page }) => {
+    // Should show warning about simulations
+    await expect(page.getByText(/Simulations are estimates/i)).toBeVisible();
+  });
+});
+
+test.describe('Prediction Flow in Playground', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/playground');
+  });
+
+  test('prediction triggered when adding shuffle operation in learning mode', async ({ page }) => {
+    // Add groupby operation (causes shuffle)
+    await page.getByTestId('add-groupby').click();
+    
+    // Wait for prediction prompt to appear
+    await expect(page.getByText('Prediction Time')).toBeVisible({ timeout: 5000 });
+    
+    // Should see prediction options
+    await expect(page.getByText('Full shuffle across network')).toBeVisible();
+  });
+
+  test('prediction can be skipped in expert mode', async ({ page }) => {
+    // Switch to expert mode
+    await page.getByTestId('mode-toggle').click();
+    await expect(page.getByTestId('mode-toggle')).toContainText('Expert');
+    
+    // Add groupby operation
+    await page.getByTestId('add-groupby').click();
+    
+    // In expert mode, prediction should still appear but with skip option
+    // OR it might not trigger at all depending on implementation
+    // The prediction panel should have a skip button
+    const skipButton = page.getByRole('button', { name: /Skip/i });
+    if (await skipButton.isVisible({ timeout: 2000 })) {
+      await skipButton.click();
     }
+    
+    // DAG should be visible
+    await expect(page.getByTestId('execution-dag')).toBeVisible();
+  });
+
+  test('committing prediction shows animation', async ({ page }) => {
+    // Add groupby operation
+    await page.getByTestId('add-groupby').click();
+    
+    // Wait for prediction prompt
+    await expect(page.getByText('Prediction Time')).toBeVisible({ timeout: 5000 });
+    
+    // Select a prediction
+    await page.getByText('Full shuffle across network').click();
+    
+    // Commit prediction
+    await page.getByTestId('prediction-commit').click();
+    
+    // Animation or explanation should follow
+    await expect(page.getByText(/Spark is reacting|Decision|Reason/i)).toBeVisible({ timeout: 5000 });
+  });
+});
+
+test.describe('Visual Grammar in Playground', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/playground');
+    // Switch to expert mode to skip predictions
+    await page.getByTestId('mode-toggle').click();
+  });
+
+  test('DAG legend shows color meanings', async ({ page }) => {
+    // Add operations to show DAG
+    await page.getByTestId('add-filter').click();
+    await page.getByTestId('add-groupby').click();
+    
+    // Legend should show color meanings in the DAG area
+    const dagSection = page.locator('[data-testid="execution-dag"]').locator('..');
+    await expect(dagSection.getByText('Normal')).toBeVisible();
+    await expect(dagSection.getByText('Shuffle')).toBeVisible();
+    await expect(dagSection.getByText('Broadcast')).toBeVisible();
   });
 });

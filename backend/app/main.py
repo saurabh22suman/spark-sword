@@ -6,10 +6,17 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import analysis_router, scenarios_router
+from app.api import (
+    analysis_router,
+    scenarios_router,
+    tutorials_router,
+    progress_router,
+    feedback_router,
+)
+from app.api.expert import router as expert_router
 
 app = FastAPI(
-    title="Spark-Sword",
+    title="PrepRabbit",
     description="Spark Internals Explorer - Explain, Simulate, Suggest",
     version="0.1.0",
     # Disable docs in production for security
@@ -43,6 +50,10 @@ async def add_security_headers(request: Request, call_next):
 # Include API routers
 app.include_router(analysis_router)
 app.include_router(scenarios_router)
+app.include_router(tutorials_router)
+app.include_router(progress_router)
+app.include_router(feedback_router)
+app.include_router(expert_router)
 
 
 @app.get("/health")

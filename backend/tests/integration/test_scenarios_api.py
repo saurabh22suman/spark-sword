@@ -23,17 +23,17 @@ class TestListScenarios:
 
     def test_returns_list_of_scenarios(self, client):
         """GET /scenarios returns list of all scenarios."""
-        response = client.get("/scenarios/")
+        response = client.get("/api/scenarios/")
         
         assert response.status_code == 200
         scenarios = response.json()
         
-        # Should have all 12 built-in scenarios (5 original + 7 new per scenario-dag-spec.md)
-        assert len(scenarios) == 12
+        # Should have all 24 built-in scenarios (5 original + 7 new + 12 production)
+        assert len(scenarios) == 24
         
     def test_scenarios_have_required_fields(self, client):
         """Each scenario has required summary fields."""
-        response = client.get("/scenarios/")
+        response = client.get("/api/scenarios/")
         scenarios = response.json()
         
         for scenario in scenarios:
@@ -44,8 +44,8 @@ class TestListScenarios:
             assert "real_world_context" in scenario
             
     def test_includes_expected_scenario_ids(self, client):
-        """Scenarios include all required IDs (original 5 + 7 new per scenario-dag-spec.md)."""
-        response = client.get("/scenarios/")
+        """Scenarios include all required IDs (original 5 + 7 new + 12 production)."""
+        response = client.get("/api/scenarios/")
         scenarios = response.json()
         
         ids = {s["id"] for s in scenarios}
@@ -67,13 +67,28 @@ class TestListScenarios:
             "write_amplification",
             "union_aggregation",
         }
-        expected_ids = original_ids | new_ids
+        # 12 production pain point scenarios
+        production_ids = {
+            "small-files-explosion",
+            "broadcast-hint-backfire",
+            "aqe-mystery",
+            "cache-oom",
+            "window-function-skew",
+            "partition-sizing-tradeoffs",
+            "distinct-vs-groupby-dedup",
+            "salted-join",
+            "multiple-shuffles-sequence",
+            "coalesce-before-write",
+            "dynamic-partition-overwrite",
+            "explode-join-trap",
+        }
+        expected_ids = original_ids | new_ids | production_ids
         
         assert ids == expected_ids
         
     def test_level_values_are_valid(self, client):
         """Scenario levels are BASIC or INTERMEDIATE (no ADVANCED per spec)."""
-        response = client.get("/scenarios/")
+        response = client.get("/api/scenarios/")
         scenarios = response.json()
         
         valid_levels = {"basic", "intermediate"}
@@ -86,7 +101,7 @@ class TestGetScenario:
     
     def test_returns_scenario_with_simulation(self, client):
         """GET /scenarios/{id} returns scenario and simulation preview."""
-        response = client.get("/scenarios/simple_filter")
+        response = client.get("/api/scenarios/simple_filter")
         
         assert response.status_code == 200
         data = response.json()
@@ -96,7 +111,7 @@ class TestGetScenario:
         
     def test_scenario_has_full_details(self, client):
         """Scenario response includes all detail fields."""
-        response = client.get("/scenarios/simple_filter")
+        response = client.get("/api/scenarios/simple_filter")
         data = response.json()
         
         scenario = data["scenario"]
@@ -118,7 +133,7 @@ class TestGetScenario:
         
     def test_simulation_preview_has_required_fields(self, client):
         """Simulation preview includes metrics and explanations."""
-        response = client.get("/scenarios/groupby_aggregation")
+        response = client.get("/api/scenarios/groupby_aggregation")
         data = response.json()
         
         simulation = data["simulation"]
@@ -134,7 +149,7 @@ class TestGetScenario:
         
     def test_filter_scenario_no_shuffle(self, client):
         """Simple filter scenario has no shuffle (narrows without exchange)."""
-        response = client.get("/scenarios/simple_filter")
+        response = client.get("/api/scenarios/simple_filter")
         data = response.json()
         
         scenario = data["scenario"]
@@ -145,7 +160,7 @@ class TestGetScenario:
         
     def test_groupby_scenario_has_shuffle(self, client):
         """GroupBy scenario correctly shows shuffle."""
-        response = client.get("/scenarios/groupby_aggregation")
+        response = client.get("/api/scenarios/groupby_aggregation")
         data = response.json()
         
         scenario = data["scenario"]
@@ -156,7 +171,7 @@ class TestGetScenario:
         
     def test_join_scenario_has_shuffle(self, client):
         """Join without broadcast scenario has shuffle."""
-        response = client.get("/scenarios/join_without_broadcast")
+        response = client.get("/api/scenarios/join_without_broadcast")
         data = response.json()
         
         scenario = data["scenario"]
@@ -164,7 +179,7 @@ class TestGetScenario:
         
     def test_skewed_join_has_skew_flag(self, client):
         """Skewed join scenario is marked with expected_skew=True."""
-        response = client.get("/scenarios/skewed_join_key")
+        response = client.get("/api/scenarios/skewed_join_key")
         data = response.json()
         
         scenario = data["scenario"]
@@ -177,7 +192,7 @@ class TestGetScenario:
         
     def test_unknown_scenario_returns_404(self, client):
         """Unknown scenario ID returns 404 with message."""
-        response = client.get("/scenarios/unknown_scenario_xyz")
+        response = client.get("/api/scenarios/unknown_scenario_xyz")
         
         assert response.status_code == 404
         data = response.json()
@@ -189,7 +204,7 @@ class TestScenarioPlaygroundDefaults:
     
     def test_filter_scenario_defaults(self, client):
         """Filter scenario includes selectivity in defaults."""
-        response = client.get("/scenarios/simple_filter")
+        response = client.get("/api/scenarios/simple_filter")
         data = response.json()
         
         defaults = data["scenario"]["playground_defaults"]
@@ -200,7 +215,7 @@ class TestScenarioPlaygroundDefaults:
         
     def test_groupby_scenario_defaults(self, client):
         """GroupBy scenario includes num_groups in defaults."""
-        response = client.get("/scenarios/groupby_aggregation")
+        response = client.get("/api/scenarios/groupby_aggregation")
         data = response.json()
         
         defaults = data["scenario"]["playground_defaults"]
@@ -211,7 +226,7 @@ class TestScenarioPlaygroundDefaults:
         
     def test_join_scenario_defaults(self, client):
         """Join scenario includes right_rows in defaults."""
-        response = client.get("/scenarios/join_without_broadcast")
+        response = client.get("/api/scenarios/join_without_broadcast")
         data = response.json()
         
         defaults = data["scenario"]["playground_defaults"]
@@ -226,7 +241,7 @@ class TestScenarioExplanationGoals:
     
     def test_filter_explains_narrow_transformation(self, client):
         """Filter scenario goal explains narrow transformation."""
-        response = client.get("/scenarios/simple_filter")
+        response = client.get("/api/scenarios/simple_filter")
         data = response.json()
         
         goal = data["scenario"]["explanation_goal"]
@@ -236,7 +251,7 @@ class TestScenarioExplanationGoals:
         
     def test_groupby_explains_shuffle(self, client):
         """GroupBy scenario goal explains shuffle."""
-        response = client.get("/scenarios/groupby_aggregation")
+        response = client.get("/api/scenarios/groupby_aggregation")
         data = response.json()
         
         goal = data["scenario"]["explanation_goal"]
@@ -245,7 +260,7 @@ class TestScenarioExplanationGoals:
         
     def test_skew_scenario_explains_imbalance(self, client):
         """Skewed join scenario goal explains data imbalance."""
-        response = client.get("/scenarios/skewed_join_key")
+        response = client.get("/api/scenarios/skewed_join_key")
         data = response.json()
         
         goal = data["scenario"]["explanation_goal"]

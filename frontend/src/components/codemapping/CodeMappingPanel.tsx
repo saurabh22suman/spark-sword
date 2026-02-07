@@ -39,6 +39,7 @@ interface CodeMappingPanelProps {
 }
 
 // Group transformation types by category
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const TRANSFORMATION_CATEGORIES: Record<string, string[]> = {
   'Narrow': ['map', 'filter', 'flatMap', 'mapPartitions', 'union', 'coalesce'],
   'Wide (Shuffle)': ['groupBy', 'reduceByKey', 'aggregateByKey', 'join', 'repartition', 'distinct', 'sort', 'sortBy', 'orderBy'],
@@ -196,7 +197,7 @@ function CodeFlowVisualization({ mappings }: { mappings: TransformationMapping[]
           
           {/* Lines */}
           <div className="p-4 space-y-2">
-            {fileMappings.map((m, idx) => (
+            {fileMappings.map((m, _idx) => (
               <div key={m.stage_id} className="flex items-center gap-3">
                 {/* Line number */}
                 <span className="w-12 text-right font-mono text-xs text-slate-500">

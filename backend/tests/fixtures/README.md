@@ -1,6 +1,6 @@
 # Test Fixtures
 
-This directory contains test fixtures for the Spark-Sword test suite.
+This directory contains test fixtures for the PrepRabbit test suite.
 
 ## Directory Structure
 
