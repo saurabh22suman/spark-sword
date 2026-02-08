@@ -142,12 +142,16 @@ export default function IntentPage() {
               Upload New
             </Link>
             {isConfirmed ? (
-              <Link
-                href="/playground"
+              <button
+                onClick={() => {
+                  // Ensure latest confirmed intent is in sessionStorage
+                  sessionStorage.setItem('inferredIntent', JSON.stringify(intent));
+                  router.push('/playground?source=intent');
+                }}
                 className="px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg smooth-transition shadow-lg shadow-orange-500/30"
               >
                 Simulate →
-              </Link>
+              </button>
             ) : (
               <button
                 onClick={handleConfirmIntent}

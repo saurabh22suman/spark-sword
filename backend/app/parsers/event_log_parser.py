@@ -268,7 +268,47 @@ class EventLogParser:
             task.spill_bytes = metrics.get("Disk Bytes Spilled", 0)
 
     def _build_result(self) -> ParsedEventLog:
-        """Build the final ParsedEventLog from collected data."""
+        """Build the final ParsedEventLog from collected data.
+        
+        Also aggregates task-level metrics to stage level when stage metrics
+        are missing (Accumulables are often empty in event logs).
+        """
+        stages = list(self._stages.values())
+        tasks = list(self._tasks.values())
+
+        # Aggregate task metrics to stage level for stages with zero shuffle bytes
+        stage_task_metrics: dict[int, dict[str, int]] = {}
+        for task in tasks:
+            sid = task.stage_id
+            if sid not in stage_task_metrics:
+                stage_task_metrics[sid] = {
+                    "shuffle_read_bytes": 0,
+                    "shuffle_write_bytes": 0,
+                    "input_bytes": 0,
+                    "output_bytes": 0,
+                    "spill_bytes": 0,
+                }
+            m = stage_task_metrics[sid]
+            m["shuffle_read_bytes"] += task.shuffle_read_bytes or 0
+            m["shuffle_write_bytes"] += task.shuffle_write_bytes or 0
+            m["input_bytes"] += task.input_bytes or 0
+            m["output_bytes"] += task.output_bytes or 0
+            m["spill_bytes"] += task.spill_bytes or 0
+
+        for stage in stages:
+            agg = stage_task_metrics.get(stage.stage_id)
+            if not agg:
+                continue
+            # Fill in stage-level metrics from task aggregation when missing
+            if not stage.shuffle_read_bytes:
+                stage.shuffle_read_bytes = agg["shuffle_read_bytes"]
+            if not stage.shuffle_write_bytes:
+                stage.shuffle_write_bytes = agg["shuffle_write_bytes"]
+            if not stage.input_bytes:
+                stage.input_bytes = agg["input_bytes"]
+            if not stage.output_bytes:
+                stage.output_bytes = agg["output_bytes"]
+
         return ParsedEventLog(
             application_id=self._app_id,
             application_name=self._app_name,
@@ -276,8 +316,8 @@ class EventLogParser:
             start_time=self._start_time,
             end_time=self._end_time,
             jobs=list(self._jobs.values()),
-            stages=list(self._stages.values()),
-            tasks=list(self._tasks.values()),
+            stages=stages,
+            tasks=tasks,
             total_events=self._total_events,
             unknown_events=self._unknown_events,
         )

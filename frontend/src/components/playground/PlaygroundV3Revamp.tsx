@@ -53,6 +53,7 @@ import { cn } from '@/lib/utils';
 interface PlaygroundV3Props {
   className?: string;
   initialScenario?: string;
+  initialIntentOperations?: Operation[];
 }
 
 // Default shape - total size is primary mental model
@@ -153,7 +154,7 @@ type FlowState =
   | 'reacting'       // Spark reaction animating
   | 'explaining';    // Showing explanation
 
-export function PlaygroundV3({ className = '', initialScenario }: PlaygroundV3Props) {
+export function PlaygroundV3({ className = '', initialScenario, initialIntentOperations }: PlaygroundV3Props) {
   const reduceMotion = useReducedMotion();
   const router = useRouter();
   
@@ -264,7 +265,17 @@ export function PlaygroundV3({ className = '', initialScenario }: PlaygroundV3Pr
     
     loadScenario();
   }, [initialScenario, enterScenarioMode]);
-  
+
+  // Load intent operations when provided (from notebook intent page)
+  useEffect(() => {
+    if (!initialIntentOperations || initialIntentOperations.length === 0) return;
+    // Don't override if scenario is also loading
+    if (initialScenario) return;
+
+    setOperations(initialIntentOperations);
+    setFlowState('exploring');
+  }, [initialIntentOperations, initialScenario]);
+
   // Handle scenario reset
   const handleScenarioReset = useCallback(() => {
     if (!scenario) return;
