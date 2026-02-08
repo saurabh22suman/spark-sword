@@ -37,7 +37,7 @@ export function LandingHero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight text-slate-900 mb-4 sm:mb-6"
+            className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight text-slate-900 dark:text-white mb-4 sm:mb-6"
           >
             Learn <GradientText>PySpark</GradientText> by <br />
             <span className="relative inline-block">
@@ -54,7 +54,7 @@ export function LandingHero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-base sm:text-lg md:text-xl text-slate-600 max-w-2xl mb-6 sm:mb-10 leading-relaxed"
+            className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mb-6 sm:mb-10 leading-relaxed"
           >
             Stop staring at execution plans you don&apos;t understand. Master Spark internals, 
             performance tuning, and architecture through interactive, crash-safe simulations.
