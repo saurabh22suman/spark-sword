@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, MessageSquare, Bug, Lightbulb, Sparkles, Star, CheckCircle } from 'lucide-react';
 
@@ -74,7 +75,9 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     }, 300);
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -286,6 +289,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
