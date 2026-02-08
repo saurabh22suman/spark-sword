@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { LearningModeProvider } from '@/lib/LearningModeContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { NavBar } from '@/components/NavBar';
 import { Footer } from '@/components/Footer';
 import { ThemeProvider } from '@/components/ThemeProvider';
@@ -25,13 +26,15 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-          <LearningModeProvider>
-            <NavBar />
-            <main className="flex-1">
-              {children}
-            </main>
-            <Footer />
-          </LearningModeProvider>
+          <AuthProvider>
+            <LearningModeProvider>
+              <NavBar />
+              <main className="flex-1">
+                {children}
+              </main>
+              <Footer />
+            </LearningModeProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

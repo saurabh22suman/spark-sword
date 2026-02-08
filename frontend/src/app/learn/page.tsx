@@ -15,11 +15,14 @@ import {
   Monitor,
   Lock,
   Unlock,
-  CheckCircle2
+  CheckCircle2,
+  Trophy
 } from 'lucide-react';
 import { Card, CardContent, Badge, IconBox, PageContainer, PageHeader, Button } from '@/components/ui';
 import { AchievementsPanel } from '@/components/learn';
+import { LoginPrompt } from '@/components/LoginPrompt';
 import { useAchievements } from '@/hooks';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface GroupStatus {
   id: string;
@@ -65,12 +68,42 @@ const colorClasses: Record<string, { bg: string; border: string; text: string; p
 };
 
 export default function LearningPathPage() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [groups, setGroups] = useState<GroupStatus[]>([]);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [selectedLockedGroup, setSelectedLockedGroup] = useState<GroupStatus | null>(null);
 
   // Fetch achievements
   const { achievements, totalAchievements, unlockedCount, isLoading: achievementsLoading } = useAchievements();
+
+  // Show login prompt if not authenticated
+  if (authLoading) {
+    return (
+      <PageContainer>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="text-4xl mb-4 animate-pulse">📚</div>
+            <p className="text-slate-400">Loading...</p>
+          </div>
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <PageContainer>
+        <PageHeader
+          title="Your Learning Path"
+          description="Track your progress as you master Spark step by step."
+        />
+        <LoginPrompt 
+          feature="Track Your Learning Progress" 
+          icon={<Trophy className="w-12 h-12 text-blue-600 dark:text-blue-400" />}
+        />
+      </PageContainer>
+    );
+  }
 
   useEffect(() => {
     // Fetch learning path status (for now, mock data - will connect to API)

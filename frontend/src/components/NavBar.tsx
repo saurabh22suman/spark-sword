@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
 import { ThemeToggle } from "./ThemeToggle"
+import { AuthButton } from "./AuthButton"
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = [
@@ -58,8 +59,9 @@ export function NavBar() {
           })}
         </div>
 
-        {/* Theme Toggle */}
-        <div className="flex items-center">
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          <AuthButton />
           <ThemeToggle />
         </div>
       </div>

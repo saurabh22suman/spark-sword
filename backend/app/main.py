@@ -12,6 +12,7 @@ from app.api import (
     tutorials_router,
     progress_router,
     feedback_router,
+    auth_router,
 )
 from app.api.expert import router as expert_router
 
@@ -48,6 +49,7 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 # Include API routers
+app.include_router(auth_router)
 app.include_router(analysis_router)
 app.include_router(scenarios_router)
 app.include_router(tutorials_router)
