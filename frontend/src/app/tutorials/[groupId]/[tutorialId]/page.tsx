@@ -10,7 +10,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Lightbulb, BookOpen } from 'lucide-react';
+import { ArrowLeft, Lightbulb, BookOpen, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TutorialGroup, InteractiveTutorial } from '@/types';
 import { Card, CardContent, Badge, Button, PageContainer } from '@/components/ui';
@@ -34,6 +34,12 @@ import { CacheGoneWrongDemo } from '@/components/tutorials/CacheGoneWrongDemo';
 import { FileExplosionVisualizer } from '@/components/tutorials/FileExplosionVisualizer';
 import { ConfigTradeoffSimulator } from '@/components/tutorials/ConfigTradeoffSimulator';
 import { SparkUIWalkthrough } from '@/components/tutorials/SparkUIWalkthrough';
+import { AQETutorial } from '@/components/tutorials/AQETutorial';
+import { DPPTutorial } from '@/components/tutorials/DPPTutorial';
+import { BucketingTutorial } from '@/components/tutorials/BucketingTutorial';
+import { FormatBenchmarkTutorial } from '@/components/tutorials/FormatBenchmarkTutorial';
+import { OOMDebugger } from '@/components/tutorials/OOMDebugger';
+import { CorruptionDetective } from '@/components/tutorials/CorruptionDetective';
 import { PredictionChallenge } from '@/components/tutorials/PredictionChallenge';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
@@ -56,6 +62,12 @@ const COMPONENT_MAP: Record<string, React.ComponentType<{ className?: string }>>
   'file-explosion-visualizer': FileExplosionVisualizer,
   'config-tradeoff-simulator': ConfigTradeoffSimulator,
   'spark-ui-walkthrough': SparkUIWalkthrough,
+  'aqe-simulator': AQETutorial,
+  'dpp-visualizer': DPPTutorial,
+  'bucketing-calculator': BucketingTutorial,
+  'format-benchmark': FormatBenchmarkTutorial,
+  'oom-debugger': OOMDebugger,
+  'corruption-detective': CorruptionDetective,
 };
 
 // Fallback component for tutorials not yet implemented
@@ -236,11 +248,23 @@ export default function TutorialPage() {
           <CardContent className="p-5">
             <div className="flex items-start gap-3">
               <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-              <div>
+              <div className="flex-1">
                 <h3 className="font-bold text-blue-700 dark:text-blue-300 mb-1">What You&apos;ll Learn</h3>
                 <p className="text-slate-700 dark:text-slate-300">
                   {tutorial.learning_outcome}
                 </p>
+                {tutorial.docs_url && (
+                  <a
+                    href={tutorial.docs_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-sm"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    Refer docs for deep dive
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
               </div>
             </div>
           </CardContent>

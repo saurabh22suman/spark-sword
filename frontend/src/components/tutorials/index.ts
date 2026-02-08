@@ -22,3 +22,11 @@ export { CacheGoneWrongDemo } from './CacheGoneWrongDemo';
 export { FileExplosionVisualizer } from './FileExplosionVisualizer';
 export { ConfigTradeoffSimulator } from './ConfigTradeoffSimulator';
 export { SparkUIWalkthrough } from './SparkUIWalkthrough';
+
+// Expert-level tutorials (Groups 11-15)
+export { AQETutorial } from './AQETutorial';
+export { DPPTutorial } from './DPPTutorial';
+export { BucketingTutorial } from './BucketingTutorial';
+export { FormatBenchmarkTutorial } from './FormatBenchmarkTutorial';
+export { OOMDebugger } from './OOMDebugger';
+export { CorruptionDetective } from './CorruptionDetective';

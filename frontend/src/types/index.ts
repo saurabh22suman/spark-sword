@@ -359,6 +359,7 @@ export interface InteractiveTutorial {
   component_type: string;
   learning_outcome: string;
   prediction_challenge?: PredictionChallenge;
+  docs_url?: string;
 }
 
 export interface TutorialTopic {
