@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Github, Heart, Zap } from 'lucide-react';
+import { Github, Heart, Zap, MessageSquare } from 'lucide-react';
+import { FeedbackModal } from './FeedbackModal';
 
 const FOOTER_LINKS = [
   { href: '/upload', label: 'Upload' },
@@ -12,6 +14,8 @@ const FOOTER_LINKS = [
 ];
 
 export function Footer() {
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+
   return (
     <footer role="contentinfo" className="mt-auto border-t border-slate-200/50 dark:border-slate-800/50 glass">
       <div className="container mx-auto px-4 py-12">
@@ -88,33 +92,49 @@ export function Footer() {
             <p className="text-slate-500 dark:text-slate-500 text-sm">
               © {new Date().getFullYear()} Spark Sword. Learn Spark, don&apos;t fear it.
             </p>
-            
-            {/* Made with love */}
-            <motion.div 
-              className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400"
-              whileHover={{ scale: 1.05 }}
-            >
-              <span>Made with</span>
-              <motion.div
-                animate={{ 
-                  scale: [1, 1.2, 1],
-                }}
-                transition={{ 
-                  duration: 1,
-                  repeat: Infinity,
-                  repeatType: 'loop',
-                }}
+
+            <div className="flex items-center gap-4">
+              {/* Feedback button */}
+              <motion.button
+                onClick={() => setFeedbackOpen(true)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 dark:from-blue-500/20 dark:to-purple-500/20 hover:from-blue-500/20 hover:to-purple-500/20 dark:hover:from-blue-500/30 dark:hover:to-purple-500/30 border border-blue-200/50 dark:border-blue-500/20 text-blue-700 dark:text-blue-400 text-sm font-medium smooth-transition"
               >
-                <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+                <MessageSquare className="w-4 h-4" />
+                Feedback
+              </motion.button>
+            
+              {/* Made with love */}
+              <motion.div 
+                className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400"
+                whileHover={{ scale: 1.05 }}
+              >
+                <span>Made with</span>
+                <motion.div
+                  animate={{ 
+                    scale: [1, 1.2, 1],
+                  }}
+                  transition={{ 
+                    duration: 1,
+                    repeat: Infinity,
+                    repeatType: 'loop',
+                  }}
+                >
+                  <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+                </motion.div>
+                <span>by</span>
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  Soloengine
+                </span>
               </motion.div>
-              <span>by</span>
-              <span className="font-semibold text-slate-900 dark:text-white">
-                Soloengine
-              </span>
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Feedback Modal */}
+      <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </footer>
   );
 }
