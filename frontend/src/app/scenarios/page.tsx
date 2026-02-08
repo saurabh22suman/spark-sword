@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Book, BarChart2, Zap, Clock, AlertTriangle, Layers, ArrowRight, CheckCircle, XCircle } from 'lucide-react';
+import { Book, BarChart2, Zap, Clock, AlertTriangle, Layers, ArrowRight, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, Badge, Button, PageHeader, PageContainer } from '@/components/ui';
 import type { ScenarioSummary, ScenarioWithSimulation } from '@/types';
@@ -52,7 +52,7 @@ function ScenarioCard({
   return (
     <motion.button
       onClick={onClick}
-      whileHover={{ scale: 1.01 }}
+      whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       className="w-full"
     >
@@ -60,8 +60,8 @@ function ScenarioCard({
         hover
         variant={isSelected ? "bordered" : "default"}
         className={cn(
-          "text-left transition-all duration-200 group",
-          isSelected && "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm"
+          "text-left smooth-transition group card-hover shadow-md hover:shadow-xl",
+          isSelected && "border-blue-500 glass glow-primary"
         )}
       >
         <CardContent className="flex flex-col gap-3">
@@ -117,7 +117,7 @@ function ScenarioDetail({ data }: { data: ScenarioWithSimulation }) {
           <Book className="w-5 h-5 text-blue-500" />
           <span className="text-sm font-semibold text-blue-500 uppercase tracking-wide">Learner Scenario</span>
         </div>
-        <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">{scenario.title}</h2>
+        <h2 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-4">{scenario.title}</h2>
         <div className="flex flex-wrap gap-4 text-sm text-slate-500 dark:text-slate-400">
            <div className="flex items-center gap-1.5">
               <Layers className="w-4 h-4" />
@@ -131,7 +131,7 @@ function ScenarioDetail({ data }: { data: ScenarioWithSimulation }) {
       </div>
 
       {/* Story */}
-      <Card variant="default">
+      <Card variant="default" className="smooth-transition hover:shadow-lg">
         <CardContent>
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                <span className="text-lg">📖</span> The Context
@@ -144,8 +144,8 @@ function ScenarioDetail({ data }: { data: ScenarioWithSimulation }) {
 
       {/* Scenario DAG per scenario-dag-spec.md */}
       {dag && (
-        <Card variant="default" className="relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <Card variant="default" className="relative overflow-hidden group smooth-transition hover:shadow-lg">
+          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-400 to-blue-600 opacity-0 group-hover:opacity-100 smooth-transition" />
           <CardContent>
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
               Visual Execution Plan
@@ -157,7 +157,7 @@ function ScenarioDetail({ data }: { data: ScenarioWithSimulation }) {
 
       {/* Learning Goals */}
       {scenario.learning_goals && scenario.learning_goals.length > 0 && (
-        <Card variant="gradient" className="bg-gradient-to-br from-blue-50 to-white dark:from-slate-800 dark:to-slate-900/50 border-blue-100 dark:border-slate-700">
+        <Card variant="gradient" className="bg-gradient-to-br from-blue-50 via-blue-100/30 to-purple-50/20 dark:from-blue-950/30 dark:via-blue-900/20 dark:to-purple-950/10 border-blue-200/50 dark:border-blue-800/30 shadow-lg smooth-transition hover:shadow-xl">
           <CardContent>
             <h3 className="text-xs font-bold text-blue-500 dark:text-blue-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                  <Zap className="w-4 h-4" /> Learning Objectives
@@ -178,7 +178,7 @@ function ScenarioDetail({ data }: { data: ScenarioWithSimulation }) {
 
       {/* Key Takeaways */}
       {scenario.key_takeaways && scenario.key_takeaways.length > 0 && (
-        <Card variant="gradient" className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/10 dark:to-slate-900/50 border-emerald-200 dark:border-emerald-800/50">
+        <Card variant="gradient" className="bg-gradient-to-br from-emerald-50 via-emerald-100/30 to-teal-50/20 dark:from-emerald-950/30 dark:via-emerald-900/20 dark:to-teal-950/10 border-emerald-200/50 dark:border-emerald-800/30 shadow-lg smooth-transition hover:shadow-xl">
           <CardContent>
             <h3 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-4 flex items-center gap-2">
               <CheckCircle className="w-4 h-4" /> Key Takeaways — Remember These
@@ -350,8 +350,11 @@ export default function ScenariosPage() {
       />
 
       <div className="grid lg:grid-cols-12 gap-8">
-          {/* List Sidebar */}
-          <div className="lg:col-span-4 space-y-4">
+          {/* List Sidebar — hidden on mobile when detail is showing */}
+          <div className={cn(
+            "lg:col-span-4 space-y-4",
+            selectedScenario ? "hidden lg:block" : "block"
+          )}>
              <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-2 mb-2">
                Available Lessons
              </h2>
@@ -370,13 +373,26 @@ export default function ScenariosPage() {
             </div>
           </div>
 
-          {/* Detail View */}
-          <div className="lg:col-span-8">
+          {/* Detail View — on mobile, show back button */}
+          <div className={cn(
+            "lg:col-span-8",
+            selectedScenario ? "block" : "hidden lg:block"
+          )}>
+            {/* Mobile back button */}
+            {selectedScenario && (
+              <button
+                onClick={() => { setSelectedScenario(null); setSelectedId(null); }}
+                className="lg:hidden flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 mb-4 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Scenarios
+              </button>
+            )}
             <AnimatePresence mode="wait">
               {selectedScenario ? (
                 <ScenarioDetail key={selectedScenario.scenario.id} data={selectedScenario} />
               ) : (
-                <Card variant="default" className="h-96 flex items-center justify-center border-dashed">
+                <Card variant="default" className="h-60 sm:h-96 flex items-center justify-center border-dashed">
                   <CardContent className="text-center text-slate-400">
                     <BarChart2 className="w-10 h-10 mx-auto mb-4 opacity-50" />
                     <p>Loading scenario details...</p>

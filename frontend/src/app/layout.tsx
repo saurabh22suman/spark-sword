@@ -19,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 font-sans antialiased">
+      <body className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 font-sans antialiased">
         <ThemeProvider
             attribute="class"
             defaultTheme="light"
@@ -29,7 +29,8 @@ export default function RootLayout({
           <AuthProvider>
             <LearningModeProvider>
               <NavBar />
-              <main className="flex-1">
+              <main className="flex-1 relative">
+                <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-[0.02] dark:opacity-[0.05] pointer-events-none" />
                 {children}
               </main>
               <Footer />

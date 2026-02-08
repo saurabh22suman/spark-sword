@@ -16,11 +16,11 @@ export default function ConfigPage() {
   return (
     <PageContainer>
       <PageHeader
-        title="Spark Config Simulator"
+        title={<span className="text-gradient">Spark Config Simulator</span>}
         description="Explore how different Spark configurations affect your jobs. Each config shows its benefits, trade-offs, and when it's most relevant."
       />
-      <p className="text-sm text-slate-500 mb-8">
-        Remember: Spark optimization is about <span className="text-yellow-400">trade-offs, not tricks</span>. 
+      <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 glass p-4 rounded-lg shadow-sm">
+        Remember: Spark optimization is about <span className="text-gradient-warm font-semibold">trade-offs, not tricks</span>. 
         The best config depends on your specific workload, data size, and cluster resources.
       </p>
 
@@ -30,12 +30,12 @@ export default function ConfigPage() {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-slate-800 my-8" />
+        <div className="border-t border-slate-200/50 dark:border-slate-800/50 my-8 shadow-sm" />
 
       {/* Config Simulator */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white mb-2">Configuration Explorer</h2>
-        <p className="text-slate-400">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Configuration Explorer</h2>
+        <p className="text-slate-600 dark:text-slate-400">
           Adjust individual Spark configurations to understand their impact.
         </p>
       </div>

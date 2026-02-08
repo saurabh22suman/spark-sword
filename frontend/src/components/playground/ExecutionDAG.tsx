@@ -134,23 +134,35 @@ function DAGNodeVisual({
 }) {
   const reduceMotion = useReducedMotion();
   
-  // Determine node color based on type
-  let bgColor = 'bg-slate-800/50';
-  let borderColor = 'border-slate-600';
+  // Determine node color and styling based on type
+  let bgColor = 'glass';
+  let borderColor = 'border-slate-500/30';
   let iconColor = COLORS.flow;
+  let glowColor = 'shadow-slate-500/10';
+  let gradientFrom = 'from-slate-800/20';
+  let gradientTo = 'to-slate-900/10';
   
   if (node.isShuffle) {
-    bgColor = 'bg-orange-500/10';
-    borderColor = 'border-orange-500/50';
+    bgColor = 'glass';
+    borderColor = 'border-orange-500/40';
     iconColor = COLORS.shuffle;
+    glowColor = 'shadow-orange-500/20';
+    gradientFrom = 'from-orange-500/10';
+    gradientTo = 'to-orange-600/5';
   } else if (node.isBroadcast) {
-    bgColor = 'bg-purple-500/10';
-    borderColor = 'border-purple-500/50';
+    bgColor = 'glass';
+    borderColor = 'border-purple-500/40';
     iconColor = COLORS.broadcast;
+    glowColor = 'shadow-purple-500/20';
+    gradientFrom = 'from-purple-500/10';
+    gradientTo = 'to-purple-600/5';
   } else if (node.isSkewed) {
-    bgColor = 'bg-red-500/10';
-    borderColor = 'border-red-500/50';
+    bgColor = 'glass';
+    borderColor = 'border-red-500/40';
     iconColor = COLORS.pressure;
+    glowColor = 'shadow-red-500/20';
+    gradientFrom = 'from-red-500/10';
+    gradientTo = 'to-red-600/5';
   }
   
   // Node icons
@@ -181,24 +193,29 @@ function DAGNodeVisual({
         opacity: 1, 
         scale: isReacting && (node.isShuffle || node.isSkewed) ? 1.05 : 1,
         boxShadow: isReacting && node.isShuffle 
-          ? `0 0 20px ${COLORS.shuffle}40` 
+          ? `0 0 30px ${COLORS.shuffle}60` 
           : 'none',
       }}
+      whileHover={{ scale: 1.02 }}
       transition={{ duration: reduceMotion ? 0 : 0.3 }}
       className={`
-        relative flex items-center gap-2 px-3 py-2 rounded-lg border-2
-        ${bgColor} ${borderColor}
-        ${isActive ? 'ring-2 ring-blue-500/50' : ''}
-        transition-colors duration-200
+        group relative flex items-center gap-3 px-4 py-3 rounded-xl border-2
+        smooth-transition bg-gradient-to-br ${gradientFrom} ${gradientTo}
+        ${bgColor} ${borderColor} ${glowColor}
+        ${isActive ? 'ring-2 ring-blue-500/50 shadow-xl' : 'hover:shadow-lg'}
       `}
       data-testid={`dag-node-${node.id}`}
     >
-      <span className="text-lg" style={{ color: iconColor }}>{icon}</span>
-      <span className="text-sm font-medium text-slate-200">{node.label}</span>
+      <div className="p-2 rounded-lg bg-slate-800/40 backdrop-blur-sm group-hover:scale-110 smooth-transition">
+        <span className="text-xl" style={{ color: iconColor }}>{icon}</span>
+      </div>
+      <span className="text-sm font-bold text-slate-200 group-hover:text-gradient smooth-transition">
+        {node.label}
+      </span>
       
       {/* Stage badge */}
-      <span className="ml-auto text-xs px-1.5 py-0.5 rounded bg-slate-700/50 text-slate-400">
-        S{node.stage}
+      <span className="ml-auto text-xs px-2 py-1 rounded-md glass border border-slate-600/30 text-slate-300 font-medium shadow-sm">
+        Stage {node.stage}
       </span>
       
       {/* Skew indicator */}
@@ -206,7 +223,7 @@ function DAGNodeVisual({
         <motion.span
           animate={isReacting ? { scale: [1, 1.2, 1] } : {}}
           transition={{ repeat: Infinity, duration: 1 }}
-          className="absolute -top-1 -right-1 text-xs"
+          className="absolute -top-2 -right-2 text-base glass-sm px-1.5 py-0.5 rounded-full border border-red-500/30 shadow-red-500/30 shadow-lg"
           title="High skew detected"
         >
           ⚠️
@@ -220,20 +237,16 @@ function DAGNodeVisual({
 function StageBoundary({ stageNumber }: { stageNumber: number }) {
   return (
     <div 
-      className="flex items-center gap-2 my-2"
+      className="flex items-center gap-3 my-3"
       data-testid={`stage-boundary-${stageNumber}`}
     >
-      <div className="flex-1 border-t border-dashed" style={{ borderColor: COLORS.shuffle }} />
+      <div className="flex-1 border-t-2 border-dashed border-orange-500/40" />
       <span 
-        className="text-xs font-medium px-2 py-0.5 rounded-full"
-        style={{ 
-          backgroundColor: `${COLORS.shuffle}20`,
-          color: COLORS.shuffle,
-        }}
+        className="text-xs font-bold px-3 py-1.5 rounded-full glass border-2 border-orange-500/30 text-orange-400 shadow-orange-500/20 shadow-lg whitespace-nowrap"
       >
         🔀 Stage {stageNumber}
       </span>
-      <div className="flex-1 border-t border-dashed" style={{ borderColor: COLORS.shuffle }} />
+      <div className="flex-1 border-t-2 border-dashed border-orange-500/40" />
     </div>
   );
 }

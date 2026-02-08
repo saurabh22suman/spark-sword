@@ -171,14 +171,14 @@ export default function UploadPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-12"
+        className="text-center mb-6 sm:mb-12"
       >
-        <h1 className="text-4xl font-bold mb-4">
+        <h1 className="text-2xl sm:text-4xl font-bold mb-4">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
             Upload Artifacts
           </span>
         </h1>
-        <p className="text-slate-600 dark:text-slate-300 text-lg max-w-2xl mx-auto">
+        <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-lg max-w-2xl mx-auto">
           Drop your Spark event logs to visualize execution, or upload a notebook to extract intent.
         </p>
       </motion.div>
@@ -195,7 +195,7 @@ export default function UploadPage() {
           onDrop={handleDrop}
           onClick={() => uploadState !== 'uploading' && uploadState !== 'analyzing' && fileInputRef.current?.click()}
           className={cn(
-            "relative group border-2 border-dashed rounded-3xl p-12 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden",
+            "relative group border-2 border-dashed rounded-3xl p-6 sm:p-12 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden",
             isDragOver 
               ? "border-blue-500 bg-blue-50 dark:bg-blue-900/10 scale-[1.02]" 
               : "border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-slate-400 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800",
@@ -298,7 +298,7 @@ export default function UploadPage() {
         </AnimatePresence>
 
         {/* Info Grid */}
-        <div className="grid md:grid-cols-2 gap-6 mt-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-8 sm:mt-12">
             <div className="p-6 bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                  <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Databricks Logs</h4>
                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">

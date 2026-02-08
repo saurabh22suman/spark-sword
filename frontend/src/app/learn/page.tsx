@@ -76,35 +76,7 @@ export default function LearningPathPage() {
   // Fetch achievements
   const { achievements, totalAchievements, unlockedCount, isLoading: achievementsLoading } = useAchievements();
 
-  // Show login prompt if not authenticated
-  if (authLoading) {
-    return (
-      <PageContainer>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="text-4xl mb-4 animate-pulse">📚</div>
-            <p className="text-slate-400">Loading...</p>
-          </div>
-        </div>
-      </PageContainer>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <PageContainer>
-        <PageHeader
-          title="Your Learning Path"
-          description="Track your progress as you master Spark step by step."
-        />
-        <LoginPrompt 
-          feature="Track Your Learning Progress" 
-          icon={<Trophy className="w-12 h-12 text-blue-600 dark:text-blue-400" />}
-        />
-      </PageContainer>
-    );
-  }
-
+  // Fetch learning path status - MUST be before conditional returns (React Hooks rule)
   useEffect(() => {
     // Fetch learning path status (for now, mock data - will connect to API)
     const mockStatus: GroupStatus[] = [
@@ -243,6 +215,35 @@ export default function LearningPathPage() {
     setGroups(mockStatus);
   }, []);
 
+  // Show login prompt if not authenticated
+  if (authLoading) {
+    return (
+      <PageContainer>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="text-4xl mb-4 animate-pulse">📚</div>
+            <p className="text-slate-400">Loading...</p>
+          </div>
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <PageContainer>
+        <PageHeader
+          title={<span className="text-gradient">Your Learning Path</span>}
+          description="Track your progress as you master Spark step by step."
+        />
+        <LoginPrompt 
+          feature="Track Your Learning Progress" 
+          icon={<Trophy className="w-12 h-12 text-blue-600 dark:text-blue-400" />}
+        />
+      </PageContainer>
+    );
+  }
+
   const handleGroupClick = (group: GroupStatus) => {
     if (group.unlocked) {
       // Navigate to group page (will implement routing)
@@ -270,7 +271,7 @@ export default function LearningPathPage() {
         {/* Learning Path - Takes 2 columns */}
         <div className="lg:col-span-2">
           {/* Stats Summary */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
             <Card variant="bordered" className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">
@@ -316,7 +317,7 @@ export default function LearningPathPage() {
                 <Card
                   variant="bordered"
                   className={`relative cursor-pointer transition-all ${
-                    isLocked ? 'opacity-50' : 'hover:shadow-lg hover:scale-105'
+                    isLocked ? 'opacity-50' : 'hover:shadow-lg md:hover:scale-105'
                   }`}
                 >
                   <CardContent className="p-6">

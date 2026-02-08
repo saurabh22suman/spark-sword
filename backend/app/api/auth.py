@@ -355,6 +355,8 @@ ALLOWED_REDIRECT_DOMAINS = os.getenv("ALLOWED_REDIRECT_DOMAINS", "localhost:3000
 COOKIE_DOMAIN = os.getenv("COOKIE_DOMAIN", None)  # e.g., ".preprabbit.in"
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
 COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")
+# Public base URL for OAuth callbacks (Docker internal hostnames aren't reachable by Google)
+BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "http://localhost:8000")
 
 
 @router.get("/login")
@@ -364,7 +366,8 @@ async def login(request: Request):
     Redirects user to Google's OAuth consent screen.
     """
     google = get_google_oauth_client()
-    redirect_uri = request.url_for('auth_callback')
+    # Use public URL instead of request.url_for() which may resolve to Docker internal hostname
+    redirect_uri = f"{BACKEND_PUBLIC_URL}/api/auth/callback"
     
     return await google.authorize_redirect(request, redirect_uri)
 
@@ -483,15 +486,7 @@ async def verify(auth_token: Optional[str] = Cookie(None)):
     if not auth_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    token_data = verify_token(auth_d or expired
-    """
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    # Remove "Bearer " prefix if present
-    token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
-    
-    token_data = verify_token(token)
+    token_data = verify_token(auth_token)
     
     if not token_data:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
@@ -511,10 +506,7 @@ async def logout():
 
 
 @router.get("/me")
-async def get_current_user(authorization: Optional[str] = Cookie(None)):
-    """Get current authenticated user info.
-    
-    Args:_token: Optional[str] = Cookie(None)):
+async def get_current_user(auth_token: Optional[str] = Cookie(None)):
     """Get current authenticated user info.
     
     Args:
@@ -529,7 +521,10 @@ async def get_current_user(authorization: Optional[str] = Cookie(None)):
     if not auth_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    token_data = verify_token(auth_atus_code=401, detail="Invalid or expired token")
+    token_data = verify_token(auth_token)
+    
+    if not token_data:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
     
     # Get user from database
     storage = UserStorageService()

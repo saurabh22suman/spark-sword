@@ -5,6 +5,7 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.api import (
     analysis_router,
@@ -34,6 +35,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST"],  # Only methods we actually use
     allow_headers=["Content-Type", "Accept"],  # Only headers we need
+)
+
+# SessionMiddleware required by authlib for OAuth state storage
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET_KEY", os.getenv("JWT_SECRET_KEY", "spark-sword-session-secret-change-in-production")),
 )
 
 

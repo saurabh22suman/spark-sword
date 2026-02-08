@@ -98,10 +98,10 @@ export default function IntentPage() {
 
   if (!intent) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center">
         <div className="text-center">
           <div className="text-4xl mb-4 animate-pulse">🔍</div>
-          <p className="text-slate-400">Loading intent...</p>
+          <p className="text-slate-600 dark:text-slate-400">Loading intent...</p>
         </div>
       </main>
     );
@@ -110,26 +110,25 @@ export default function IntentPage() {
   const shuffleOperations = intent.transformations.filter(t => t.causes_shuffle);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <Link href="/" className="inline-block mb-2">
               <h1 className="text-2xl font-bold">
-                <span className="text-orange-500">Spark</span>
-                <span className="text-yellow-500">-Sword</span>
+                <span className="text-gradient">Spark Sword</span>
               </h1>
             </Link>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-semibold text-white">
+              <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
                 Intent
               </h2>
-              <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-400 rounded border border-purple-500/30">
+              <span className="text-xs px-2 py-1 glass border border-purple-500/30 dark:border-purple-500/20 text-purple-700 dark:text-purple-400 rounded shadow-sm">
                 Inferred • User Adjustable
               </span>
               {isConfirmed && (
-                <span className="text-xs px-2 py-1 bg-green-500/20 text-green-400 rounded border border-green-500/30">
+                <span className="text-xs px-2 py-1 glass border border-green-500/30 dark:border-green-500/20 text-green-700 dark:text-green-400 rounded shadow-sm">
                   ✓ Confirmed
                 </span>
               )}
@@ -138,14 +137,14 @@ export default function IntentPage() {
           <div className="flex gap-3 items-center">
             <Link
               href="/upload"
-              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm"
+              className="px-4 py-2 glass hover:shadow-md smooth-transition text-slate-700 dark:text-slate-300 rounded-lg text-sm shadow-sm"
             >
               Upload New
             </Link>
             {isConfirmed ? (
               <Link
                 href="/playground"
-                className="px-4 py-2 bg-spark-orange hover:bg-orange-600 text-white rounded-lg transition-colors"
+                className="px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg smooth-transition shadow-lg shadow-orange-500/30"
               >
                 Simulate →
               </Link>

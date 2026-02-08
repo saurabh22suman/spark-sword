@@ -19,6 +19,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Resolve API URL: fallback to empty string (relative) so Next.js rewrites proxy to backend
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     try {
       // Check for auth via cookie (set by backend, shared across subdomains)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`, {
+      const response = await fetch(`${API_BASE}/api/auth/verify`, {
         method: 'POST',
         credentials: 'include',  // Important: sends cookies cross-origin
         headers: {
@@ -51,14 +54,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = () => {
-    // Redirect to backend OAuth endpoint
-    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`;
+    // Redirect to backend OAuth endpoint (relative URL proxied by Next.js rewrites)
+    window.location.href = `${API_BASE}/api/auth/login`;
   };
 
   const logout = async () => {
     try {
       // Call logout endpoint (clears cookie on backend)
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
+      await fetch(`${API_BASE}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',  // Important: sends cookies to clear
       });

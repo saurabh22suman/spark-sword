@@ -46,18 +46,18 @@ export function LandingInteractive() {
   };
 
   return (
-    <section className="py-24 bg-slate-50 border-y border-slate-200 relative overflow-hidden">
-      {/* Ambient background glow - Light Mode */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-100 rounded-full blur-[100px] opacity-60 -z-10 pointer-events-none" />
+    <section className="py-12 sm:py-16 md:py-24 bg-slate-50 dark:bg-slate-950 border-y border-slate-200 dark:border-slate-800 relative overflow-hidden">
+      {/* Ambient background glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-100 dark:bg-blue-900/20 rounded-full blur-[100px] opacity-60 -z-10 pointer-events-none" />
 
       <div className="container px-4 mx-auto">
         <div className="max-w-4xl mx-auto">
           
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Don&apos;t memorize. <span className="text-blue-600">Simulate.</span>
+          <div className="text-center mb-8 md:mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">
+              Don&apos;t memorize. <span className="text-blue-600 dark:text-blue-400">Simulate.</span>
             </h2>
-            <p className="text-slate-600 text-lg">
+            <p className="text-slate-600 dark:text-slate-400 text-lg">
               Experience the &quot;Aha!&quot; moments of distributed computing without the cluster costs.
             </p>
           </div>
@@ -68,15 +68,15 @@ export function LandingInteractive() {
             <Card variant="glass" padding="lg" className="glass-card">
               <CardContent className="p-0">
                 <div className="flex items-center gap-3 mb-6">
-                  <IconBox icon={Zap} variant="warning" size="sm" className="bg-yellow-100 text-yellow-600" />
+                  <IconBox icon={Zap} variant="warning" size="sm" className="bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400" />
                   <div>
-                    <h3 className="text-slate-900 font-semibold">The Skew Problem</h3>
-                    <p className="text-xs text-slate-500">Optimization Challenge #1</p>
+                    <h3 className="text-slate-900 dark:text-white font-semibold">The Skew Problem</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Optimization Challenge #1</p>
                   </div>
                 </div>
 
-              <p className="text-slate-700 mb-6 text-sm leading-relaxed">
-                You have a 100GB dataset keyed by <code className="bg-slate-100 text-slate-800 px-1 py-0.5 rounded text-xs border border-slate-200">user_id</code>. Key distribution is highly skewed (one user has 20GB). 
+              <p className="text-slate-700 dark:text-slate-300 mb-6 text-sm leading-relaxed">
+                You have a 100GB dataset keyed by <code className="bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-1 py-0.5 rounded text-xs border border-slate-200 dark:border-slate-600">user_id</code>. Key distribution is highly skewed (one user has 20GB). 
                 Which strategy prevents OOM errors?
               </p>
 
@@ -85,12 +85,12 @@ export function LandingInteractive() {
                   onClick={() => runSimulation('option1')}
                   className={`w-full text-left p-4 rounded-lg border transition-all duration-300 relative group overflow-hidden ${
                     activeSimulation === 'option1' 
-                      ? 'bg-slate-100 border-slate-300 ring-1 ring-slate-300 shadow-sm' 
-                      : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm'
+                      ? 'bg-slate-100 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600 ring-1 ring-slate-300 dark:ring-slate-600 shadow-sm' 
+                      : 'bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:shadow-sm'
                   }`}
                 >
                   <div className="relative z-10 flex justify-between items-center">
-                    <span className="text-sm font-medium text-slate-800">Default Shuffle</span>
+                    <span className="text-sm font-medium text-slate-800 dark:text-slate-200">Default Shuffle</span>
                     {activeSimulation === 'option1' && simState === 'running' && <RefreshCw className="w-4 h-4 animate-spin text-slate-500" />}
                     {activeSimulation === 'option1' && simState === 'completed' && <X className="w-5 h-5 text-red-500" />}
                   </div>
@@ -100,12 +100,12 @@ export function LandingInteractive() {
                   onClick={() => runSimulation('option2')}
                   className={`w-full text-left p-4 rounded-lg border transition-all duration-300 relative group overflow-hidden ${
                     activeSimulation === 'option2' 
-                      ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-200 shadow-sm' 
-                      : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm'
+                      ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 ring-1 ring-blue-200 dark:ring-blue-500/30 shadow-sm' 
+                      : 'bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:shadow-sm'
                   }`}
                 >
                   <div className="relative z-10 flex justify-between items-center">
-                    <span className="text-sm font-medium text-slate-800">Salting (Random Prefix)</span>
+                    <span className="text-sm font-medium text-slate-800 dark:text-slate-200">Salting (Random Prefix)</span>
                     {activeSimulation === 'option2' && simState === 'running' && <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />}
                     {activeSimulation === 'option2' && simState === 'completed' && <Check className="w-5 h-5 text-green-500" />}
                   </div>
@@ -118,12 +118,12 @@ export function LandingInteractive() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="mt-6 pt-6 border-t border-slate-200"
+                    className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700"
                   >
-                    <p className={`text-sm ${activeSimulation === 'option2' ? 'text-green-600' : 'text-red-500'} font-semibold mb-2`}>
+                    <p className={`text-sm ${activeSimulation === 'option2' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'} font-semibold mb-2`}>
                       {activeSimulation === 'option2' ? 'Correct!' : 'OOM Error Detected'}
                     </p>
-                    <p className="text-xs text-slate-600 leading-relaxed">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                       {activeSimulation === 'option2' 
                         ? "Salting the key distributes the massive user group across multiple executors, allowing parallel processing." 
                         : "One executor received the entire 20GB partition, causing it to run out of memory while others sat idle."}
@@ -135,7 +135,7 @@ export function LandingInteractive() {
             </Card>
 
             {/* Visual Simulation Display - Kept Dark for "Terminal" Feel */}
-            <Card variant="default" padding="lg" className="relative h-[400px] bg-slate-900 border-slate-800 flex flex-col justify-between overflow-hidden shadow-2xl">
+            <Card variant="default" padding="lg" className="relative h-[300px] sm:h-[400px] bg-slate-900 border-slate-800 flex flex-col justify-between overflow-hidden shadow-2xl">
               {/* Grid Background */}
               <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-[0.05]" />
               

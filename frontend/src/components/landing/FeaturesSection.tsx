@@ -2,60 +2,91 @@
 
 import { motion } from 'framer-motion';
 import { Network, Sliders, DollarSign, BookOpen } from 'lucide-react';
-import { Card, CardContent, GradientText, IconBox } from '@/components/ui';
+import { Card, CardContent, GradientText } from '@/components/ui';
+import { LucideIcon } from 'lucide-react';
 
 const features = [
   {
     title: "Visual Execution DAGs",
     description: "Don't just read the plan—see it. Watch data flow through stages, visualize shuffles, and spot bottlenecks instantly.",
     icon: Network,
-    iconVariant: 'blue' as const,
     className: "md:col-span-2",
     bg: "bg-gradient-to-br from-blue-500/5 to-transparent",
-    border: "group-hover:border-blue-500/50"
+    border: "group-hover:border-blue-500/50",
+    iconBg: "bg-blue-500/10 dark:bg-blue-500/20",
+    iconColor: "text-blue-600 dark:text-blue-400",
+    iconGlow: "group-hover:shadow-blue-500/25",
+    ringColor: "ring-blue-500/20",
   },
   {
     title: "Interactive Simulations",
     description: "Tweak standard configs like `spark.sql.shuffle.partitions` and see the immediate impact on job duration without starting a cluster.",
     icon: Sliders,
-    iconVariant: 'purple' as const,
     className: "",
     bg: "bg-gradient-to-br from-purple-500/5 to-transparent",
-    border: "group-hover:border-purple-500/50"
+    border: "group-hover:border-purple-500/50",
+    iconBg: "bg-purple-500/10 dark:bg-purple-500/20",
+    iconColor: "text-purple-600 dark:text-purple-400",
+    iconGlow: "group-hover:shadow-purple-500/25",
+    ringColor: "ring-purple-500/20",
   },
   {
     title: "Cost Impact Analysis",
     description: "Translate 'seconds saved' into 'dollars saved'. Understand the cloud cost implications of skew and spill.",
     icon: DollarSign,
-    iconVariant: 'green' as const,
     className: "",
     bg: "bg-gradient-to-br from-green-500/5 to-transparent",
-    border: "group-hover:border-green-500/50"
+    border: "group-hover:border-green-500/50",
+    iconBg: "bg-green-500/10 dark:bg-green-500/20",
+    iconColor: "text-green-600 dark:text-green-400",
+    iconGlow: "group-hover:shadow-green-500/25",
+    ringColor: "ring-green-500/20",
   },
   {
     title: "Step-by-Step Tutorials",
     description: "Guided scenarios that take you from 'Out of Memory' to 'Highly Optimized' with explained solutions.",
     icon: BookOpen,
-    iconVariant: 'yellow' as const,
     className: "md:col-span-2",
     bg: "bg-gradient-to-br from-yellow-500/5 to-transparent",
-    border: "group-hover:border-yellow-500/50"
+    border: "group-hover:border-yellow-500/50",
+    iconBg: "bg-amber-500/10 dark:bg-amber-500/20",
+    iconColor: "text-amber-600 dark:text-amber-400",
+    iconGlow: "group-hover:shadow-amber-500/25",
+    ringColor: "ring-amber-500/20",
   },
 ];
 
+function AnimatedIcon({ icon: Icon, bg, color, glow, ring }: { icon: LucideIcon; bg: string; color: string; glow: string; ring: string }) {
+  return (
+    <motion.div
+      whileHover={{ rotate: [0, -8, 8, -4, 0] }}
+      transition={{ duration: 0.5 }}
+      className={`
+        w-14 h-14 rounded-2xl ${bg} ${color} ${glow}
+        flex items-center justify-center mb-6
+        ring-1 ${ring}
+        group-hover:scale-110 group-hover:shadow-lg
+        transition-all duration-300 ease-out
+      `}
+    >
+      <Icon className="w-7 h-7" strokeWidth={1.8} />
+    </motion.div>
+  );
+}
+
 export function FeaturesSection() {
   return (
-    <section className="py-24 bg-white relative overflow-hidden">
+    <section className="py-12 sm:py-16 md:py-24 bg-white dark:bg-slate-950 relative overflow-hidden">
         {/* Background Gradients */}
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-50" />
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-800 to-transparent opacity-50" />
       
       <div className="container px-4 mx-auto">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-6">
+        <div className="text-center max-w-2xl mx-auto mb-8 md:mb-16">
+          <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6">
             Everything you need to <br/>
             <GradientText>master Spark internals</GradientText>
           </h2>
-          <p className="text-slate-600 text-lg">
+          <p className="text-slate-600 dark:text-slate-400 text-lg">
             Built for Data Engineers who want to move beyond &quot;it works&quot; to &quot;it works efficiently.&quot;
           </p>
         </div>
@@ -74,21 +105,22 @@ export function FeaturesSection() {
                 variant="default" 
                 padding="lg" 
                 hover
-                className={`bg-slate-50 border-slate-200 hover:bg-white ${feature.border}`}
+                className={`bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-800/70 ${feature.border}`}
               >
                 <div className={`absolute inset-0 rounded-2xl ${feature.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`} />
                 
                 <CardContent className="relative z-10 p-0">
-                  <IconBox 
-                    icon={feature.icon} 
-                    variant={feature.iconVariant} 
-                    size="md"
-                    className="mb-6 group-hover:scale-110 transition-transform duration-300 bg-white border border-slate-100 shadow-sm"
+                  <AnimatedIcon 
+                    icon={feature.icon}
+                    bg={feature.iconBg}
+                    color={feature.iconColor}
+                    glow={feature.iconGlow}
+                    ring={feature.ringColor}
                   />
-                  <h3 className="text-xl font-semibold text-slate-900 mb-3">
+                  <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
                     {feature.title}
                   </h3>
-                  <p className="text-slate-600 leading-relaxed">
+                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
                     {feature.description}
                   </p>
                 </CardContent>

@@ -122,8 +122,8 @@ function GroupCard({
         variant={isSelected ? "bordered" : "default"}
         hover
         className={cn(
-          "text-left transition-all duration-200 group",
-          isSelected && `${colors.border} ${colors.light}`
+          "text-left smooth-transition group shadow-md hover:shadow-xl",
+          isSelected && `${colors.border} ${colors.light} glow-primary`
         )}
       >
         <CardContent>
@@ -185,14 +185,14 @@ function GroupDetail({ group }: { group: TutorialGroup }) {
             Group {group.number} — {group.subtitle}
           </Badge>
         </div>
-        <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">{group.title}</h2>
+        <h2 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-4">{group.title}</h2>
         <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
           {group.description}
         </p>
       </div>
 
       {/* Learning Outcome */}
-      <Card variant="bordered" className={cn(colors.light, colors.border)}>
+      <Card variant="bordered" className={cn(colors.light, colors.border, "shadow-lg smooth-transition hover:shadow-xl")}>
         <CardContent>
           <div className="flex items-start gap-3">
             <Lightbulb className={cn("w-6 h-6 shrink-0 mt-0.5", colors.text)} />
@@ -384,25 +384,28 @@ export default function TutorialsPage() {
         }
       />
 
-      {/* Philosophy Banner */}
-      <Card variant="gradient" className="mb-10 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 border-blue-100 dark:border-slate-700">
+      {/* Philosophy Banner — hide chevrons on mobile, use vertical layout */}
+      <Card variant="gradient" className="mb-6 sm:mb-10 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 border-blue-100 dark:border-slate-700">
         <CardContent>
-          <div className="flex flex-wrap items-center justify-center gap-4 text-center">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-center">
             <Badge variant="primary" size="md">What Spark does</Badge>
-            <ChevronRight className="w-4 h-4 text-slate-400" />
+            <ChevronRight className="w-4 h-4 text-slate-400 hidden sm:block" />
             <Badge variant="info" size="md">Why it behaves this way</Badge>
-            <ChevronRight className="w-4 h-4 text-slate-400" />
+            <ChevronRight className="w-4 h-4 text-slate-400 hidden sm:block" />
             <Badge variant="warning" size="md">What usually goes wrong</Badge>
-            <ChevronRight className="w-4 h-4 text-slate-400" />
+            <ChevronRight className="w-4 h-4 text-slate-400 hidden sm:block" />
             <Badge variant="success" size="md">How to reason</Badge>
           </div>
         </CardContent>
       </Card>
 
-      {/* Main Content */}
+      {/* Main Content — Mobile: show list OR detail, Desktop: side-by-side */}
       <div className="grid lg:grid-cols-12 gap-8">
-        {/* Groups List */}
-        <div className="lg:col-span-5 space-y-3">
+        {/* Groups List — hidden on mobile when a group detail is visible */}
+        <div className={cn(
+          "lg:col-span-5 space-y-3",
+          selectedGroup ? "hidden lg:block" : "block"
+        )}>
           <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-2 mb-4">
             Learning Tracks
           </h2>
@@ -416,13 +419,26 @@ export default function TutorialsPage() {
           ))}
         </div>
 
-        {/* Detail Panel */}
-        <div className="lg:col-span-7">
+        {/* Detail Panel — on mobile, show back button to return to list */}
+        <div className={cn(
+          "lg:col-span-7",
+          selectedGroup ? "block" : "hidden lg:block"
+        )}>
+          {/* Mobile back button */}
+          {selectedGroup && (
+            <button
+              onClick={() => { setSelectedGroup(null); setSelectedGroupId(null); }}
+              className="lg:hidden flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 mb-4 transition-colors"
+            >
+              <ChevronRight className="w-4 h-4 rotate-180" />
+              Back to Learning Tracks
+            </button>
+          )}
           <AnimatePresence mode="wait">
             {selectedGroup ? (
               <GroupDetail key={selectedGroup.id} group={selectedGroup} />
             ) : (
-              <Card variant="default" className="h-96 flex items-center justify-center border-dashed">
+              <Card variant="default" className="h-60 sm:h-96 flex items-center justify-center border-dashed">
                 <CardContent className="text-center text-slate-400">
                   <Brain className="w-10 h-10 mx-auto mb-4 opacity-50" />
                   <p>Select a track to explore</p>
