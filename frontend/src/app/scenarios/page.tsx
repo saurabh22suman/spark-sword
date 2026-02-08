@@ -9,7 +9,7 @@ import { Card, CardContent, Badge, Button, PageHeader, PageContainer } from '@/c
 import type { ScenarioSummary, ScenarioWithSimulation } from '@/types';
 import { ScenarioDAG } from '@/components/scenarios';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 // Utility functions - kept for potential future use
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

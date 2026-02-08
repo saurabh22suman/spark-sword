@@ -36,7 +36,7 @@ import { ConfigTradeoffSimulator } from '@/components/tutorials/ConfigTradeoffSi
 import { SparkUIWalkthrough } from '@/components/tutorials/SparkUIWalkthrough';
 import { PredictionChallenge } from '@/components/tutorials/PredictionChallenge';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 // Map component types to actual components
 const COMPONENT_MAP: Record<string, React.ComponentType<{ className?: string }>> = {

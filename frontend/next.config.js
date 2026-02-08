@@ -14,7 +14,7 @@ const nextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { 
             key: 'Content-Security-Policy', 
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' http://localhost:8000 http://backend:8000;"
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' http://localhost:8000 http://backend:8000 https://accounts.google.com;"
           },
         ],
       },
@@ -26,6 +26,10 @@ const nextConfig = {
       {
         source: '/api/:path*',
         destination: 'http://backend:8000/api/:path*',
+      },
+      {
+        source: '/health',
+        destination: 'http://backend:8000/health',
       },
     ];
   },

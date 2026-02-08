@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, Badge, IconBox, PageHeader, PageContainer } from '@/components/ui';
 import type { TutorialGroupSummary, TutorialGroup } from '@/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 // Map icon names to components
 const ICON_MAP: Record<string, React.ElementType> = {
