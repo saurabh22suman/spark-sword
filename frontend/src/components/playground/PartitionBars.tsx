@@ -21,6 +21,12 @@ interface PartitionBarsProps {
 // 2GB typical task memory threshold
 const SPILL_THRESHOLD_BYTES = 2 * 1024 * 1024 * 1024;
 
+// Deterministic pseudo-random based on seed — avoids hydration mismatch from Math.random()
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 9301 + 49297) * 233280;
+  return x - Math.floor(x);
+}
+
 export function PartitionBars({
   partitions,
   skewFactor,
@@ -39,8 +45,8 @@ export function PartitionBars({
       const skewAmount = 1 + (skewFactor - 1) * ((i - skewedIndex + 1) / 3);
       return avgPartitionSizeBytes * skewAmount;
     }
-    // Add some variance to normal partitions
-    const variance = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
+    // Add deterministic variance to normal partitions (seeded by index + partition count)
+    const variance = 0.8 + seededRandom(i + partitions * 7 + barCount * 13) * 0.4; // 0.8 to 1.2
     return avgPartitionSizeBytes * variance;
   });
   

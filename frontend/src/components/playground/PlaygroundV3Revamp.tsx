@@ -26,6 +26,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { DataShapePanel, type DataShape } from './DataShapePanel';
 import { OperationsBuilder, type Operation } from './OperationsBuilder';
@@ -154,6 +155,7 @@ type FlowState =
 
 export function PlaygroundV3({ className = '', initialScenario }: PlaygroundV3Props) {
   const reduceMotion = useReducedMotion();
+  const router = useRouter();
   
   // Scenario bridge context
   const scenarioBridge = useScenarioBridge();
@@ -285,9 +287,9 @@ export function PlaygroundV3({ className = '', initialScenario }: PlaygroundV3Pr
     setShape(DEFAULT_SHAPE);
     setOperations([]);
     setFlowState('exploring');
-    // Update URL without scenario param
-    window.history.replaceState({}, '', '/playground');
-  }, [exitScenarioMode]);
+    // Update URL without scenario param — use Next.js router to keep internal state in sync
+    router.replace('/playground');
+  }, [exitScenarioMode, router]);
   
   // Handle hypothesis selection
   const handleHypothesisSelect = useCallback((hypothesis: string) => {
@@ -307,7 +309,10 @@ export function PlaygroundV3({ className = '', initialScenario }: PlaygroundV3Pr
     }
     
     setPreviousOperations(operations);
-  }, [operations, shape, mode, previousOperations, flowState]);
+    // Note: previousOperations intentionally excluded from deps to avoid cascading re-renders.
+    // This effect should only fire when operations/shape/mode/flowState change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [operations, shape, mode, flowState]);
   
   // Handle prediction selection
   const handlePredictionSelect = useCallback((prediction: PredictionType) => {

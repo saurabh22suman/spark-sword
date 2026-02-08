@@ -15,7 +15,7 @@
 
 'use client';
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { Operation } from './OperationsBuilder';
 import type { DataShape } from './DataShapePanel';
@@ -132,7 +132,8 @@ function DAGNodeVisual({
   isActive?: boolean;
   isReacting?: boolean;
 }) {
-  const reduceMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion();
+  const reduceMotion = prefersReducedMotion ?? false;
   
   // Determine node color and styling based on type
   let bgColor = 'glass';
@@ -262,7 +263,12 @@ export function ExecutionDAG({
   const containerRef = useRef<HTMLDivElement>(null);
   const [_nodePositions, _setNodePositions] = useState<Record<string, number>>({});
   
-  const { nodes, edges: _edges } = buildDAG(operations, shape);
+  // Memoize DAG computation to prevent new array references on every render,
+  // which would trigger cascading useEffect → setState → re-render loops
+  const { nodes, edges: _edges } = useMemo(
+    () => buildDAG(operations, shape),
+    [operations, shape]
+  );
   
   // Calculate node positions after render
   useEffect(() => {
@@ -280,7 +286,16 @@ export function ExecutionDAG({
       }
     });
     
-    _setNodePositions(positions);
+    // Only update if positions actually changed to avoid unnecessary re-renders
+    _setNodePositions(prev => {
+      const prevKeys = Object.keys(prev);
+      const newKeys = Object.keys(positions);
+      if (prevKeys.length !== newKeys.length) return positions;
+      for (const key of newKeys) {
+        if (prev[key] !== positions[key]) return positions;
+      }
+      return prev;
+    });
   }, [nodes]);
   
   // Handle reaction complete

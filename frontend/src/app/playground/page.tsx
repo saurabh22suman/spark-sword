@@ -4,8 +4,7 @@ import { PlaygroundV3Revamp } from '@/components/playground';
 import { ScenarioBridgeProvider } from '@/components/playground/ScenarioBridge';
 import Link from 'next/link';
 import { LearningModeToggle } from '@/components/learning';
-import { useSearchParams } from 'next/navigation';
-import { Suspense, Component, ReactNode } from 'react';
+import { useState, useEffect, Component, ReactNode } from 'react';
 import { PageContainer, PageHeader } from '@/components/ui';
 
 // Error boundary to prevent playground crashes from blocking navigation
@@ -49,10 +48,19 @@ class PlaygroundErrorBoundary extends Component<{ children: ReactNode }, ErrorBo
   }
 }
 
-function PlaygroundContent() {
-  const searchParams = useSearchParams();
-  const scenarioId = searchParams.get('scenario');
-  
+export default function PlaygroundPage() {
+  // Read scenario ID from URL without useSearchParams (avoids Suspense/transition lanes)
+  const [scenarioId, setScenarioId] = useState<string | null>(null);
+  // Defer heavy component rendering to client-only to prevent hydration mismatches
+  // (PartitionBars, useReducedMotion, framer-motion) from creating stuck React lanes
+  const [clientReady, setClientReady] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setScenarioId(params.get('scenario'));
+    setClientReady(true);
+  }, []);
+
   return (
     <PageContainer>
       {/* Header */}
@@ -74,27 +82,20 @@ function PlaygroundContent() {
         />
       </div>
 
-      {/* Playground v3 Revamp with Scenario Bridge */}
-      <PlaygroundErrorBoundary>
-        <ScenarioBridgeProvider>
-          <PlaygroundV3Revamp initialScenario={scenarioId || undefined} />
-        </ScenarioBridgeProvider>
-      </PlaygroundErrorBoundary>
-    </PageContainer>
-  );
-}
-
-export default function PlaygroundPage() {
-  return (
-    <Suspense fallback={
-      <PageContainer>
-        <div className="animate-pulse">
-          <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded mb-4" />
-          <div className="h-4 w-full max-w-96 bg-slate-200 dark:bg-slate-800 rounded" />
+      {/* Playground v3 Revamp — deferred to client to avoid hydration mismatch */}
+      {clientReady ? (
+        <PlaygroundErrorBoundary>
+          <ScenarioBridgeProvider>
+            <PlaygroundV3Revamp initialScenario={scenarioId || undefined} />
+          </ScenarioBridgeProvider>
+        </PlaygroundErrorBoundary>
+      ) : (
+        <div className="animate-pulse space-y-4">
+          <div className="h-12 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+          <div className="h-32 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+          <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl" />
         </div>
-      </PageContainer>
-    }>
-      <PlaygroundContent />
-    </Suspense>
+      )}
+    </PageContainer>
   );
 }
