@@ -60,6 +60,30 @@ export interface ParsedEventLog {
 }
 
 // ============================================================
+// Failure Pattern Types
+// ============================================================
+
+export type FailureSeverity = 'critical' | 'high' | 'medium' | 'low';
+
+export interface FailurePattern {
+  type: string;  // STUCK_TASK, HIGH_GC_PRESSURE, EXCESSIVE_SPILL, EXECUTOR_LOSS
+  severity: FailureSeverity;
+  description: string;
+  explanation: string;
+  suggested_fix: string;
+  metrics: Record<string, string | number | boolean>;
+  stage_id?: number;
+  executor_id?: string;
+}
+
+export interface FailureAnalysisResult {
+  patterns: FailurePattern[];
+  total_patterns: number;
+  has_critical: boolean;
+  has_high: boolean;
+}
+
+// ============================================================
 // Intent Graph Types (per notebook-intent-extraction-spec.md)
 // ============================================================
 
@@ -358,7 +382,8 @@ export interface InteractiveTutorial {
   description: string;
   component_type: string;
   learning_outcome: string;
-  prediction_challenge?: PredictionChallenge;
+  prediction_challenge?: PredictionChallenge;  // DEPRECATED: Kept for backward compatibility
+  prediction_challenges?: PredictionChallenge[];  // Question bank - pick one randomly
   docs_url?: string;
 }
 

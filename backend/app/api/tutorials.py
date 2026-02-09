@@ -31,7 +31,8 @@ class InteractiveTutorial(BaseModel):
     description: str
     component_type: str  # e.g., "partition-playground", "shuffle-map", "join-simulator"
     learning_outcome: str
-    prediction_challenge: Optional[PredictionChallenge] = None
+    prediction_challenge: Optional[PredictionChallenge] = None  # DEPRECATED: Use prediction_challenges instead
+    prediction_challenges: list[PredictionChallenge] = []  # Question bank - frontend picks one randomly
     docs_url: Optional[str] = None  # Official Spark documentation URL for deep dive
 
 

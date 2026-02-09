@@ -37,6 +37,11 @@ import { Card, CardContent, IconBox } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import type { DAGData, OptimizationInsight, StageExplanation } from '@/types';
 
+// Feature Integration: New analysis components
+import FailureDiagnostics from '@/components/diagnostics/FailureDiagnostics';
+import FixItWizard from '@/components/wizard/FixItWizard';
+import AntiPatternGallery from '@/components/gallery/AntiPatternGallery';
+
 interface AnalysisResult {
   dag: DAGData;
   insights: OptimizationInsight[];
@@ -55,7 +60,7 @@ interface AnalysisResult {
   demo_label?: string;
 }
 
-type ViewMode = 'dag' | 'code' | 'insights' | 'compare' | 'metrics';
+type ViewMode = 'dag' | 'code' | 'insights' | 'compare' | 'metrics' | 'failures' | 'fixes' | 'antipatterns' | 'codemapper';
 
 function MetricCard({ label, value, unit, warning, icon: Icon }: { 
   label: string; 
@@ -168,8 +173,11 @@ export default function AnalysisPage() {
     { id: 'dag', label: 'Flow Graph', icon: Layers },
     { id: 'code', label: 'Code Map', icon: Code2 },
     { id: 'insights', label: 'Insights', icon: Lightbulb },
+    { id: 'failures', label: 'Failures', icon: AlertTriangle },
+    { id: 'fixes', label: 'Fix Wizard', icon: Zap },
     { id: 'compare', label: 'Compare', icon: Layout },
     { id: 'metrics', label: 'Metrics', icon: BarChart2 },
+    { id: 'antipatterns', label: 'Anti-Patterns', icon: Activity },
   ] as const;
 
   return (
@@ -212,15 +220,6 @@ export default function AnalysisPage() {
         <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-50">
           <div className="container mx-auto px-4 h-16 flex items-center justify-between">
             <div className="flex items-center gap-8">
-              <Link href="/" className="flex items-center gap-2 group">
-                <div className="w-8 h-8 rounded bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:scale-105 transition-transform">
-                  S
-                </div>
-                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
-                  PrepRabbit
-                </span>
-              </Link>
-              
               {/* Navigation Tabs */}
               <div className="hidden md:flex bg-muted/50 p-1 rounded-lg border border-border/50">
                 {tabs.map((tab) => (
@@ -517,6 +516,33 @@ export default function AnalysisPage() {
                   </div>
                 </section>
               </div>
+            )}
+
+            {/* Feature 1-2: Failure Diagnostics */}
+            {viewMode === 'failures' && (
+              <Card variant="default">
+                <CardContent>
+                  <FailureDiagnostics />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Feature 6: Fix-It Wizard */}
+            {viewMode === 'fixes' && (
+              <Card variant="default">
+                <CardContent>
+                  <FixItWizard />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Feature 7: Anti-Pattern Gallery */}
+            {viewMode === 'antipatterns' && (
+              <Card variant="default">
+                <CardContent>
+                  <AntiPatternGallery />
+                </CardContent>
+              </Card>
             )}
             </motion.div>
           </div>

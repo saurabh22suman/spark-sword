@@ -33,7 +33,7 @@ function AuthCallbackHandler() {
       <div className="text-center">
         <div className="text-4xl mb-4 animate-pulse">🔐</div>
         <p className="text-slate-400">Completing authentication...</p>
-        <p className="text-xs text-slate-500 mt-2">You can now use this account across all PrepRabbit subdomains</p>
+        <p className="text-xs text-slate-500 mt-2">You can now use this account across all Spark Sword features</p>
       </div>
     </div>
   );

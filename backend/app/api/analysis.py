@@ -4,6 +4,15 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from app.parsers import EventLogParser, NotebookParser
 from app.services.analysis_service import AnalysisService
+from app.services.failure_analysis import FailureAnalysisService
+from app.analyzers.dataflow_analyzer import DataFlowAnalyzer
+from app.services.code_mapper_service import EnhancedCodeMapper
+from app.services.fix_wizard import FixItWizard
+from app.services.anti_patterns import (
+    get_all_anti_patterns,
+    get_anti_pattern_by_id,
+    get_anti_patterns_by_category,
+)
 
 router = APIRouter(prefix="/api", tags=["analysis"])
 
@@ -11,6 +20,10 @@ router = APIRouter(prefix="/api", tags=["analysis"])
 parser = EventLogParser()
 notebook_parser = NotebookParser()
 analysis_service = AnalysisService()
+failure_analysis_service = FailureAnalysisService()
+dataflow_analyzer = DataFlowAnalyzer()
+code_mapper = EnhancedCodeMapper()
+fix_wizard = FixItWizard()
 
 
 @router.post("/upload/event-log")
@@ -213,3 +226,229 @@ async def get_demo_analysis() -> dict:
     result_dict["demo_label"] = "Demo Data — Try uploading your own files for real analysis"
     
     return result_dict
+
+
+@router.post("/analyze/failures")
+async def analyze_failures(file: UploadFile = File(...)) -> dict:
+    """Analyze event log for failure patterns.
+    
+    Feature 1: Failure Diagnostics
+    Detects 4 failure patterns: Stuck Tasks, GC Pressure, Excessive Spill, Executor Loss.
+    
+    Args:
+        file: Event log file
+    
+    Returns:
+        Detected failure patterns with explanations and evidence
+    """
+    try:
+        content = await file.read()
+        content_str = content.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="File must be UTF-8 encoded")
+    
+    try:
+        parsed_log = parser.parse(content_str)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse event log: {str(e)}",
+        )
+    
+    # Detect patterns
+    patterns = failure_analysis_service.analyze(parsed_log)
+    
+    return {
+        "patterns": [p.model_dump() for p in patterns],
+        "total_patterns": len(patterns),
+        "has_failures": len(patterns) > 0
+    }
+
+
+@router.post("/analyze/dataflow")
+async def analyze_dataflow(file: UploadFile = File(...)) -> dict:
+    """Analyze data flow across stages (Sankey diagram data).
+    
+    Feature 3: Data Flow Visualization
+    Shows how data moves through shuffle boundaries.
+    
+    Args:
+        file: Event log file
+    
+    Returns:
+        Nodes and links for Sankey diagram
+    """
+    try:
+        content = await file.read()
+        content_str = content.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="File must be UTF-8 encoded")
+    
+    try:
+        parsed_log = parser.parse(content_str)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse event log: {str(e)}",
+        )
+    
+    # Analyze data flow
+    flow_data = dataflow_analyzer.analyze(parsed_log)
+    
+    return {
+        "nodes": [n.model_dump() for n in flow_data.nodes],
+        "links": [l.model_dump() for l in flow_data.links],
+        "total_shuffle_bytes": sum(l.bytes_shuffled for l in flow_data.links)
+    }
+
+
+@router.post("/analyze/code-mapping")
+async def analyze_code_mapping(
+    event_log: UploadFile = File(...),
+    notebook: UploadFile | None = File(None)
+) -> dict:
+    """Map notebook code to Spark stages.
+    
+    Feature 5: Code-to-Stage Mapper
+    Links each transformation in user code to the stages it triggers.
+    
+    Args:
+        event_log: Event log file
+        notebook: Optional Jupyter notebook (.ipynb)
+    
+    Returns:
+        Bidirectional mapping: code lines → stages and stages → code
+    """
+    try:
+        log_content = await event_log.read()
+        log_str = log_content.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="Event log must be UTF-8 encoded")
+    
+    try:
+        parsed_log = parser.parse(log_str)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse event log: {str(e)}",
+        )
+    
+    # Parse notebook if provided
+    parsed_notebook = None
+    if notebook:
+        try:
+            nb_content = await notebook.read()
+            nb_str = nb_content.decode("utf-8")
+            parsed_notebook = notebook_parser.parse(nb_str)
+        except Exception as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to parse notebook: {str(e)}",
+            )
+    
+    # Create mapping
+    mapping = code_mapper.create_mapping(parsed_log, parsed_notebook)
+    
+    return {
+        "stage_links": [link.model_dump() for link in mapping.stage_links],
+        "total_stages": len(mapping.stage_links),
+        "has_code": parsed_notebook is not None
+    }
+
+
+@router.post("/analyze/fix-wizard")
+async def generate_fixes(file: UploadFile = File(...)) -> dict:
+    """Generate actionable fixes from detected failure patterns.
+    
+    Feature 6: Fix-It Wizard
+    Analyzes failures → suggests config changes, code mods, and impact estimates.
+    
+    Args:
+        file: Event log file
+    
+    Returns:
+        List of Fix objects sorted by priority (easy + low-risk first)
+    """
+    try:
+        content = await file.read()
+        content_str = content.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="File must be UTF-8 encoded")
+    
+    try:
+        parsed_log = parser.parse(content_str)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse event log: {str(e)}",
+        )
+    
+    # Detect patterns
+    patterns = failure_analysis_service.analyze(parsed_log)
+    
+    # Generate fixes
+    fixes = fix_wizard.generate_fixes(patterns)
+    
+    try:
+        return {
+            "fixes": [f.model_dump() for f in fixes],
+            "patterns_analyzed": len(patterns),
+            "total_fixes": len(fixes)
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate fixes: {str(e)}",
+        )
+
+
+@router.get("/anti-patterns")
+async def get_antipatterns(category: str | None = None) -> dict:
+    """Get anti-pattern examples from the gallery.
+    
+    Feature 7: Anti-Pattern Gallery
+    Educational examples of bad Spark code with runnable scenarios.
+    
+    Args:
+        category: Optional filter by category (joins, memory, shuffles, actions, caching)
+    
+    Returns:
+        List of anti-pattern examples with bad/good code, metrics, and explanations
+    """
+    try:
+        if category:
+            patterns = get_anti_patterns_by_category(category)
+        else:
+            patterns = get_all_anti_patterns()
+        
+        return {
+            "anti_patterns": [p.model_dump() for p in patterns],
+            "total": len(patterns),
+            "categories": ["joins", "memory", "shuffles", "actions", "caching", "correctness"]
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch anti-patterns: {str(e)}",
+        )
+
+
+@router.get("/anti-patterns/{pattern_id}")
+async def get_antipattern_detail(pattern_id: str) -> dict:
+    """Get detailed view of a specific anti-pattern.
+    
+    Args:
+        pattern_id: The anti-pattern ID (e.g., "cartesian-join")
+    
+    Returns:
+        Full anti-pattern details including code examples and metrics
+    """
+    pattern = get_anti_pattern_by_id(pattern_id)
+    
+    if not pattern:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Anti-pattern '{pattern_id}' not found"
+        )
+    
+    return pattern.model_dump()

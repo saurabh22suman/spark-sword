@@ -167,7 +167,7 @@ export default function IntentPage() {
         <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 mb-6">
           <p className="text-slate-300">
             <span className="text-lg mr-2">🧠</span>
-            This is PrepRabbit&apos;s interpretation of your code. 
+            This is Spark Sword&apos;s interpretation of your code. 
             <strong className="text-white"> Confirm or adjust assumptions</strong> below before simulation.
           </p>
           {learningMode && (

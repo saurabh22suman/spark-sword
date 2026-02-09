@@ -87,7 +87,7 @@ export function FeedbackForm({ onClose }: FeedbackFormProps) {
           Thank you! 🎉
         </h3>
         <p className="text-slate-600 dark:text-slate-400">
-          Your feedback helps us improve PrepRabbit for everyone.
+          Your feedback helps us improve Spark Sword for everyone.
         </p>
       </motion.div>
     );

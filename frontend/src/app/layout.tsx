@@ -7,7 +7,7 @@ import { Footer } from '@/components/Footer';
 import { ThemeProvider } from '@/components/ThemeProvider';
 
 export const metadata: Metadata = {
-  title: 'PrepRabbit | Interactive Spark Learning Platform',
+  title: 'Spark Sword | Interactive Spark Learning Platform',
   description: 'The interactive alternative to Spark video tutorials. Learn Apache Spark and Databricks through hands-on simulations, real-time DAG visualization, and prediction-based learning. Master Spark optimization by doing, not watching.',
   keywords: ['Apache Spark', 'Databricks', 'PySpark', 'Spark Tutorial', 'Interactive Learning', 'Spark Optimization', 'Data Engineering', 'Spark UI', 'Spark Performance'],
 };

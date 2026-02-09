@@ -46,7 +46,7 @@ export default function DashboardPage() {
   return (
     <PageContainer size="lg">
       <PageHeader
-        title={<GradientText variant="primary">Welcome to PrepRabbit</GradientText>}
+        title={<GradientText variant="primary">Welcome to Spark Sword</GradientText>}
         description="Choose where you'd like to start your Spark optimization journey"
       />
 

@@ -7,8 +7,9 @@
  * Philosophy: Cause → Effect → Trade-off → Failure mode
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Brain, LayoutGrid, Shuffle, GitMerge, Cpu, HardDrive, 
@@ -306,7 +307,8 @@ function GroupDetail({ group }: { group: TutorialGroup }) {
   );
 }
 
-export default function TutorialsPage() {
+function TutorialsPageContent() {
+  const searchParams = useSearchParams();
   const [groups, setGroups] = useState<TutorialGroupSummary[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<TutorialGroup | null>(null);
@@ -319,7 +321,11 @@ export default function TutorialsPage() {
       .then(res => res.json())
       .then(data => {
         setGroups(data);
-        if (data.length > 0) {
+        // Check if there's a group parameter in URL
+        const groupParam = searchParams.get('group');
+        if (groupParam && data.find((g: TutorialGroupSummary) => g.id === groupParam)) {
+          setSelectedGroupId(groupParam);
+        } else if (data.length > 0) {
           setSelectedGroupId(data[0].id);
         }
         setLoading(false);
@@ -328,7 +334,7 @@ export default function TutorialsPage() {
         setError(err.message);
         setLoading(false);
       });
-  }, []);
+  }, [searchParams]);
 
   // Fetch group detail when selection changes
   useEffect(() => {
@@ -449,5 +455,22 @@ export default function TutorialsPage() {
         </div>
       </div>
     </PageContainer>
+  );
+}
+
+export default function TutorialsPage() {
+  return (
+    <Suspense fallback={
+      <PageContainer>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="text-center">
+            <Brain className="w-12 h-12 mx-auto mb-4 text-indigo-500 animate-pulse" />
+            <p className="text-slate-400">Loading tutorials...</p>
+          </div>
+        </div>
+      </PageContainer>
+    }>
+      <TutorialsPageContent />
+    </Suspense>
   );
 }

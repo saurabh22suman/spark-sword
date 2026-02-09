@@ -436,7 +436,7 @@ export function SparkExecutionAnimation({
               transition={{ duration: getMotionDuration(0.4), delay: 0.2 }}
               className="text-lg md:text-xl font-semibold text-white text-center"
             >
-              PrepRabbit makes this visible.
+              Spark Sword makes this visible.
             </motion.p>
             
             <motion.div

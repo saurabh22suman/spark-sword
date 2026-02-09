@@ -4,7 +4,7 @@ import { LearningModeToggle } from '@/components/learning';
 import { Card, CardHeader, CardTitle, CardContent, Button, PageContainer, PageHeader } from '@/components/ui';
 
 export const metadata = {
-  title: 'Executor Memory | PrepRabbit',
+  title: 'Executor Memory | Spark Sword',
   description: 'Interactive diagram explaining how Spark executor memory works, including spills and caching trade-offs.',
 };
 

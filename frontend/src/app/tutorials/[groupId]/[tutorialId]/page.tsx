@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Lightbulb, BookOpen, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { TutorialGroup, InteractiveTutorial } from '@/types';
+import type { TutorialGroup, InteractiveTutorial, PredictionChallenge as PredictionChallengeType } from '@/types';
 import { Card, CardContent, Badge, Button, PageContainer } from '@/components/ui';
 import { useProgress, useAchievements, type Achievement } from '@/hooks';
 import { AchievementUnlock } from '@/components/learn';
@@ -103,6 +103,7 @@ export default function TutorialPage() {
   const [challengeCompleted, setChallengeCompleted] = useState(false);
   const [predictionStartTime, _setPredictionStartTime] = useState<number>(Date.now());
   const [hintsUsedCount, setHintsUsedCount] = useState(0);
+  const [selectedChallenge, setSelectedChallenge] = useState<PredictionChallengeType | null>(null);
   
   // Achievement state
   const [unlockedAchievement, setUnlockedAchievement] = useState<Achievement | null>(null);
@@ -158,6 +159,18 @@ export default function TutorialPage() {
           const found = topic.tutorials.find((t: InteractiveTutorial) => t.id === tutorialId);
           if (found) {
             setTutorial(found);
+            
+            // Randomly select a challenge from question bank
+            // Check array first, but only if it has items, otherwise fallback to singular
+            const challenges = (found.prediction_challenges && found.prediction_challenges.length > 0) 
+              ? found.prediction_challenges 
+              : (found.prediction_challenge ? [found.prediction_challenge] : []);
+            
+            if (challenges.length > 0) {
+              const randomIndex = Math.floor(Math.random() * challenges.length);
+              setSelectedChallenge(challenges[randomIndex]);
+            }
+            
             break;
           }
         }
@@ -253,18 +266,6 @@ export default function TutorialPage() {
                 <p className="text-slate-700 dark:text-slate-300">
                   {tutorial.learning_outcome}
                 </p>
-                {tutorial.docs_url && (
-                  <a
-                    href={tutorial.docs_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-sm"
-                  >
-                    <BookOpen className="w-4 h-4" />
-                    Refer docs for deep dive
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                )}
               </div>
             </div>
           </CardContent>
@@ -272,7 +273,7 @@ export default function TutorialPage() {
       </motion.div>
 
       {/* Prediction Challenge (Brilliant-style) */}
-      {tutorial.prediction_challenge && showChallenge && !challengeCompleted && (
+      {selectedChallenge && showChallenge && !challengeCompleted && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -280,7 +281,7 @@ export default function TutorialPage() {
           className="mb-8"
         >
           <PredictionChallenge 
-            challenge={tutorial.prediction_challenge}
+            challenge={selectedChallenge}
             onComplete={(correct: boolean, selectedIndex: number, hintsUsed: number) => {
               setHintsUsedCount(hintsUsed);
               handlePredictionComplete(correct, selectedIndex);
@@ -291,7 +292,7 @@ export default function TutorialPage() {
       )}
 
       {/* Interactive Component */}
-      {(!tutorial.prediction_challenge || challengeCompleted || !showChallenge) && (
+      {(!selectedChallenge || challengeCompleted || !showChallenge) && (
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -299,6 +300,40 @@ export default function TutorialPage() {
           className="mb-8"
         >
           <InteractiveComponent />
+        </motion.div>
+      )}
+
+      {/* Refer Docs Button - Moved to end */}
+      {(!selectedChallenge || challengeCompleted || !showChallenge) && tutorial.docs_url && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8"
+        >
+          <Card variant="bordered" className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <div>
+                    <h3 className="font-semibold text-blue-900 dark:text-blue-300">Want to go deeper?</h3>
+                    <p className="text-sm text-blue-700 dark:text-blue-200">Read the official Spark documentation for advanced details</p>
+                  </div>
+                </div>
+                <a
+                  href={tutorial.docs_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-sm whitespace-nowrap"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Refer docs for deep dive
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
       )}
 

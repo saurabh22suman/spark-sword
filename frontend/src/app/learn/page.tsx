@@ -246,8 +246,8 @@ export default function LearningPathPage() {
 
   const handleGroupClick = (group: GroupStatus) => {
     if (group.unlocked) {
-      // Navigate to group page (will implement routing)
-      window.location.href = `/learn/${group.id}`;
+      // Navigate to tutorials page with group pre-selected
+      window.location.href = `/tutorials?group=${group.id}`;
     } else {
       // Show unlock modal
       setSelectedLockedGroup(group);

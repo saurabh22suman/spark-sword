@@ -106,7 +106,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     Send Feedback
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Help us make PrepRabbit better
+                    Help us make Spark Sword better
                   </p>
                 </div>
               </div>
