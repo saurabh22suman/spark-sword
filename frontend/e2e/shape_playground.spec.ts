@@ -236,3 +236,120 @@ test.describe('Visual Grammar in Playground', () => {
     await expect(dagSection.getByText('Broadcast')).toBeVisible();
   });
 });
+
+test.describe('Enhanced Features (Phase 1)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/playground');
+  });
+
+  test('URL state persists playground configuration', async ({ page }) => {
+    // Add an operation
+    await page.getByTestId('add-filter').click();
+    
+    // Wait for URL to update (debounced 500ms)
+    await page.waitForTimeout(600);
+    
+    // Check that URL contains state parameter
+    const url = page.url();
+    expect(url).toContain('state=');
+    
+    // Reload page
+    await page.reload();
+    
+    // Operation should still be present after reload
+    await expect(page.locator('[data-testid^="chain-op-"]').filter({ hasText: /Filter/i })).toBeVisible();
+  });
+
+  test('Share button copies URL to clipboard', async ({ page }) => {
+    // Add operations
+    await page.getByTestId('add-filter').click();
+    await page.getByTestId('add-groupby').click();
+    
+    // Click share button
+    await page.getByTestId('share-button').click();
+    
+    // Toast notification should appear
+    await expect(page.getByText(/Link copied to clipboard/i)).toBeVisible();
+  });
+
+  test('ExecutionStepper toggle shows step-by-step view', async ({ page }) => {
+    // Switch to expert mode
+    await page.getByTestId('mode-toggle').click();
+    
+    // Add operations to create a chain
+    await page.getByTestId('add-filter').click();
+    await page.getByTestId('add-groupby').click();
+    
+    // Toggle to step-through mode
+    await page.getByTestId('toggle-stepper').click();
+    
+    // ExecutionStepper should be visible
+    await expect(page.getByTestId('execution-stepper')).toBeVisible();
+    
+    // Should show step navigation controls
+    await expect(page.getByTestId('step-previous')).toBeVisible();
+    await expect(page.getByTestId('step-next')).toBeVisible();
+    await expect(page.getByTestId('step-play-pause')).toBeVisible();
+  });
+
+  test('ExecutionStepper allows step navigation', async ({ page }) => {
+    // Switch to expert mode
+    await page.getByTestId('mode-toggle').click();
+    
+    // Add multiple operations
+    await page.getByTestId('add-filter').click();
+    await page.getByTestId('add-groupby').click();
+    await page.getByTestId('add-join').click();
+    
+    // Toggle to step-through mode
+    await page.getByTestId('toggle-stepper').click();
+    
+    // Should start at step 1
+    await expect(page.getByText(/Step 1 of/)).toBeVisible();
+    
+    // Click next button
+    await page.getByTestId('step-next').click();
+    
+    // Should advance to step 2
+    await expect(page.getByText(/Step 2 of/)).toBeVisible();
+    
+    // Click previous button
+    await page.getByTestId('step-previous').click();
+    
+    // Should go back to step 1
+    await expect(page.getByText(/Step 1 of/)).toBeVisible();
+  });
+
+  test('ExecutionStepper shows Spark decision explanations', async ({ page }) => {
+    // Switch to expert mode
+    await page.getByTestId('mode-toggle').click();
+    
+    // Add a groupby operation
+    await page.getByTestId('add-groupby').click();
+    
+    // Toggle to step-through mode
+    await page.getByTestId('toggle-stepper').click();
+    
+    // Should show Spark's decision process
+    await expect(page.getByText(/Spark's Decision Process/i)).toBeVisible();
+    await expect(page.getByText(/GroupBy requires colocating/i)).toBeVisible();
+  });
+
+  test('ExecutionStepper shows input and output state', async ({ page }) => {
+    // Switch to expert mode
+    await page.getByTestId('mode-toggle').click();
+    
+    // Add filter operation
+    await page.getByTestId('add-filter').click();
+    
+    // Toggle to step-through mode
+    await page.getByTestId('toggle-stepper').click();
+    
+    // Should show input and output states
+    await expect(page.getByText('Input State')).toBeVisible();
+    await expect(page.getByText('Output State')).toBeVisible();
+    
+    // Should show partition bars for both states
+    await expect(page.locator('[data-testid="partition-bars"]')).toHaveCount(2);
+  });
+});

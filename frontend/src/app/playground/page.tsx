@@ -8,6 +8,7 @@ import { useState, useEffect, Component, ReactNode } from 'react';
 import { PageContainer, PageHeader } from '@/components/ui';
 import type { InferredIntent, IntentGraphNode } from '@/types';
 import type { Operation } from '@/components/playground/OperationsBuilder';
+import { parseUrlState, type DataShape } from '@/lib/url-state';
 
 // Error boundary to prevent playground crashes from blocking navigation
 interface ErrorBoundaryState {
@@ -139,6 +140,7 @@ export default function PlaygroundPage() {
   const [scenarioId, setScenarioId] = useState<string | null>(null);
   const [intentOperations, setIntentOperations] = useState<Operation[] | null>(null);
   const [intentSummary, setIntentSummary] = useState<string | null>(null);
+  const [urlLoadedState, setUrlLoadedState] = useState<{ shape: DataShape; operations: Operation[] } | null>(null);
   // Defer heavy component rendering to client-only to prevent hydration mismatches
   // (PartitionBars, useReducedMotion, framer-motion) from creating stuck React lanes
   const [clientReady, setClientReady] = useState(false);
@@ -147,7 +149,22 @@ export default function PlaygroundPage() {
     const params = new URLSearchParams(window.location.search);
     const scenario = params.get('scenario');
     const source = params.get('source');
+    
+    // Priority 1: Load from URL state (shareable links)
+    const urlState = parseUrlState(params);
+    if (urlState) {
+      setUrlLoadedState({
+        shape: urlState.shape,
+        operations: urlState.operations,
+      });
+      if (urlState.scenarioId) {
+        setScenarioId(urlState.scenarioId);
+      }
+      setClientReady(true);
+      return;
+    }
 
+    // Priority 2: Load from intent (notebook parsing)
     if (source === 'intent') {
       // Load intent from sessionStorage and convert to operations
       try {
@@ -164,6 +181,7 @@ export default function PlaygroundPage() {
         console.error('Failed to load intent operations:', e);
       }
     } else if (scenario) {
+      // Priority 3: Load from scenario
       setScenarioId(scenario);
     }
 
@@ -207,6 +225,8 @@ export default function PlaygroundPage() {
             <PlaygroundV3Revamp
               initialScenario={scenarioId || undefined}
               initialIntentOperations={intentOperations || undefined}
+              initialShape={urlLoadedState?.shape}
+              initialOperations={urlLoadedState?.operations}
             />
           </ScenarioBridgeProvider>
         </PlaygroundErrorBoundary>

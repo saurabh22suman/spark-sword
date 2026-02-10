@@ -1,0 +1,234 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - link "⚡ Spark Sword" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e6]: ⚡
+        - generic [ref=e7]: Spark Sword
+      - generic [ref=e8]:
+        - link "Dashboard" [ref=e9] [cursor=pointer]:
+          - /url: /dashboard
+        - link "Upload" [ref=e10] [cursor=pointer]:
+          - /url: /upload
+        - link "Playground" [ref=e11] [cursor=pointer]:
+          - /url: /playground
+          - text: Playground
+        - link "Tutorials" [ref=e13] [cursor=pointer]:
+          - /url: /tutorials
+        - link "Scenarios" [ref=e14] [cursor=pointer]:
+          - /url: /scenarios
+      - generic [ref=e15]:
+        - button "Toggle theme" [ref=e16] [cursor=pointer]:
+          - img [ref=e18]
+        - button "Notifications" [ref=e24] [cursor=pointer]:
+          - img [ref=e25]
+        - button "Sign In" [ref=e29] [cursor=pointer]:
+          - img [ref=e30]
+          - generic [ref=e33]: Sign In
+  - main [ref=e34]:
+    - generic [ref=e36]:
+      - generic [ref=e37]:
+        - generic [ref=e38]:
+          - link "← Back" [ref=e39] [cursor=pointer]:
+            - /url: /
+          - button "Expert Mode" [ref=e40] [cursor=pointer]:
+            - generic [ref=e41]: ⚡
+            - generic [ref=e42]: Expert Mode
+        - generic [ref=e43]:
+          - heading "DataFrame Shape Playground" [level=1] [ref=e46]
+          - paragraph [ref=e48]: Develop intuition for how Spark reacts to data shape and operations. Build operation chains, predict Spark's decisions, and understand trade-offs.
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - generic [ref=e51]:
+            - generic [ref=e52]: Mode
+            - button "📚 Learning" [ref=e53] [cursor=pointer]
+            - button "🎯 Challenge Off" [ref=e54] [cursor=pointer]
+          - button "Share" [ref=e56] [cursor=pointer]:
+            - img [ref=e57]
+            - text: Share
+        - generic [ref=e59]:
+          - button "📚 Examples" [ref=e60] [cursor=pointer]
+          - button "📌 Snapshot" [ref=e61] [cursor=pointer]
+          - button "🔄 Reset" [ref=e62] [cursor=pointer]
+        - generic [ref=e63]:
+          - generic [ref=e64]: ⚡
+          - generic [ref=e65]: Simulations are estimates — no actual Spark execution. Think before tuning.
+        - generic [ref=e66]:
+          - generic [ref=e67]:
+            - heading "Data Shape" [level=3] [ref=e68]
+            - generic [ref=e69]: 💡 Shape affects everything downstream
+          - generic [ref=e70]:
+            - generic [ref=e71]:
+              - generic [ref=e72]:
+                - generic [ref=e73]: 10.0 GB
+                - generic [ref=e74]: Total Size
+              - generic [ref=e75]:
+                - generic [ref=e76]: 107.4M
+                - generic [ref=e77]: Rows
+              - generic [ref=e78]:
+                - generic [ref=e79]: "200"
+                - generic [ref=e80]: Partitions
+              - generic [ref=e81]:
+                - generic [ref=e82]: 51.2 MB
+                - generic [ref=e83]: Per Partition
+            - generic [ref=e84]:
+              - generic [ref=e85]:
+                - generic [ref=e86]: Total Data Size
+                - generic [ref=e87]: 10.0 GB
+              - generic [ref=e88]:
+                - button "100 MB" [ref=e89] [cursor=pointer]
+                - button "1 GB" [ref=e90] [cursor=pointer]
+                - button "10 GB" [ref=e91] [cursor=pointer]
+                - button "100 GB" [ref=e92] [cursor=pointer]
+                - button "1 TB" [ref=e93] [cursor=pointer]
+              - slider [ref=e94] [cursor=pointer]: "10737418240"
+            - generic [ref=e95]:
+              - generic [ref=e96]:
+                - generic [ref=e97]: Avg Row Size
+                - generic [ref=e98]: 100 bytes
+              - slider [ref=e99] [cursor=pointer]: "100"
+            - generic [ref=e100]:
+              - generic [ref=e101]:
+                - generic [ref=e102]: Partitions
+                - generic [ref=e103]: "200"
+              - slider [ref=e104] [cursor=pointer]: "200"
+            - generic [ref=e105]:
+              - generic [ref=e106]:
+                - generic [ref=e107]: Skew Factor
+                - generic [ref=e108]: 1.0x
+              - slider [ref=e109] [cursor=pointer]: "1"
+              - paragraph [ref=e110]: How much larger the largest partition is vs average (1 = uniform)
+            - generic [ref=e111]:
+              - generic [ref=e112]:
+                - generic [ref=e113]: Partition Distribution
+                - generic [ref=e114]: Even
+              - generic [ref=e115]:
+                - 'generic "Partition 1: 61.1 MB" [ref=e116]'
+                - 'generic "Partition 2: 45.9 MB" [ref=e117]'
+                - 'generic "Partition 3: 60.5 MB" [ref=e118]'
+                - 'generic "Partition 4: 44.1 MB" [ref=e119]'
+                - 'generic "Partition 5: 42.3 MB" [ref=e120]'
+                - 'generic "Partition 6: 61.2 MB" [ref=e121]'
+                - 'generic "Partition 7: 56.2 MB" [ref=e122]'
+                - 'generic "Partition 8: 51.9 MB" [ref=e123]'
+                - 'generic "Partition 9: 47.9 MB" [ref=e124]'
+                - 'generic "Partition 10: 50.0 MB" [ref=e125]'
+                - 'generic "Partition 11: 50.8 MB" [ref=e126]'
+                - 'generic "Partition 12: 53.8 MB" [ref=e127]'
+                - 'generic "Partition 13: 44.5 MB" [ref=e128]'
+                - 'generic "Partition 14: 57.9 MB" [ref=e129]'
+                - 'generic "Partition 15: 50.2 MB" [ref=e130]'
+                - 'generic "Partition 16: 53.7 MB" [ref=e131]'
+                - 'generic "Partition 17: 53.9 MB" [ref=e132]'
+                - 'generic "Partition 18: 59.8 MB" [ref=e133]'
+                - 'generic "Partition 19: 48.2 MB" [ref=e134]'
+                - 'generic "Partition 20: 46.3 MB" [ref=e135]'
+              - generic [ref=e136]:
+                - generic [ref=e139]: Normal
+                - generic [ref=e142]: Hot
+                - generic [ref=e145]: Spill Risk
+          - generic [ref=e147]:
+            - generic [ref=e148]:
+              - generic [ref=e149]: Partition Distribution
+              - generic [ref=e150]: 1.2x skew
+            - generic [ref=e172]:
+              - generic [ref=e175]: Normal
+              - generic [ref=e178]: Hot
+              - generic [ref=e181]: Spill Risk
+              - generic [ref=e182]: ← Drag bars to adjust →
+        - generic [ref=e183]:
+          - generic [ref=e184]:
+            - heading "Operation Chain" [level=3] [ref=e185]
+            - generic [ref=e186]:
+              - generic [ref=e187]:
+                - generic [ref=e188]:
+                  - heading "Operation Chain" [level=4] [ref=e189]
+                  - generic [ref=e190]: 0 operations
+                - generic [ref=e192]:
+                  - generic [ref=e193]: 📖
+                  - generic [ref=e194]: Read
+                  - generic [ref=e195]: Input DataFrame
+              - generic [ref=e196]:
+                - heading "Add Operation" [level=4] [ref=e197]
+                - generic [ref=e198]:
+                  - button "🔍 Filter" [ref=e199] [cursor=pointer]:
+                    - generic [ref=e200]: 🔍
+                    - generic [ref=e201]: Filter
+                  - button "📊 GroupBy" [ref=e202] [cursor=pointer]:
+                    - generic [ref=e203]: 📊
+                    - generic [ref=e204]: GroupBy
+                  - button "🔗 Join" [ref=e205] [cursor=pointer]:
+                    - generic [ref=e206]: 🔗
+                    - generic [ref=e207]: Join
+                  - button "💾 Write" [ref=e208] [cursor=pointer]:
+                    - generic [ref=e209]: 💾
+                    - generic [ref=e210]: Write
+                - button "▶ Show Advanced" [ref=e211] [cursor=pointer]:
+                  - generic [ref=e212]: ▶
+                  - generic [ref=e213]: Show Advanced
+          - generic [ref=e214]:
+            - heading "Execution DAG" [level=3] [ref=e216]
+            - generic [ref=e217]:
+              - generic [ref=e219]:
+                - generic [ref=e220]: 📖
+                - generic [ref=e221]: Read
+                - generic [ref=e222]: Stage 0
+              - generic [ref=e223]:
+                - generic [ref=e224]: 📊
+                - paragraph [ref=e225]: Add operations to see the execution DAG
+        - generic [ref=e226]:
+          - generic [ref=e227]:
+            - heading "History" [level=3] [ref=e228]
+            - generic [ref=e229]: 0 snapshots
+          - generic [ref=e230]: 📌 Click "Snapshot" to save current state for comparison
+  - contentinfo [ref=e231]:
+    - generic [ref=e232]:
+      - generic [ref=e233]:
+        - generic [ref=e234]:
+          - link "Spark Sword" [ref=e235] [cursor=pointer]:
+            - /url: /
+            - img [ref=e237]
+            - generic [ref=e239]: Spark Sword
+          - paragraph [ref=e240]: Learn Spark the way senior engineers teach it. No boring docs — just interactive visualizations that make Spark's execution model click.
+        - generic [ref=e241]:
+          - heading "Explore" [level=4] [ref=e242]
+          - list [ref=e243]:
+            - listitem [ref=e244]:
+              - link "Upload" [ref=e245] [cursor=pointer]:
+                - /url: /upload
+            - listitem [ref=e246]:
+              - link "Playground" [ref=e247] [cursor=pointer]:
+                - /url: /playground
+            - listitem [ref=e248]:
+              - link "Tutorials" [ref=e249] [cursor=pointer]:
+                - /url: /tutorials
+            - listitem [ref=e250]:
+              - link "Scenarios" [ref=e251] [cursor=pointer]:
+                - /url: /scenarios
+        - generic [ref=e252]:
+          - heading "Resources" [level=4] [ref=e253]
+          - list [ref=e254]:
+            - listitem [ref=e255]:
+              - link "Spark Docs" [ref=e256] [cursor=pointer]:
+                - /url: https://spark.apache.org/docs/latest/
+            - listitem [ref=e257]:
+              - link "GitHub" [ref=e258] [cursor=pointer]:
+                - /url: https://github.com/saurabh22suman
+                - img [ref=e259]
+                - text: GitHub
+      - generic [ref=e263]:
+        - paragraph [ref=e264]: © 2026 Spark Sword. Learn Spark, don't fear it.
+        - generic [ref=e265]:
+          - button "Feedback" [ref=e266] [cursor=pointer]:
+            - img [ref=e267]
+            - text: Feedback
+          - generic [ref=e269]:
+            - generic [ref=e270]: Made with
+            - img [ref=e272]
+            - generic [ref=e274]: by
+            - generic [ref=e275]: Soloengine
+  - alert [ref=e276]
+```

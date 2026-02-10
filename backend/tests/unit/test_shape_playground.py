@@ -585,3 +585,124 @@ class TestOperationChain:
         
         # Filter first should have less shuffle
         assert result1.total_shuffle_bytes < result2.total_shuffle_bytes
+
+
+class TestStepByStepExecution:
+    """Tests for step-by-step execution mode (Python Tutor pattern)."""
+
+    def test_simulate_chain_returns_intermediate_states(self) -> None:
+        """Each step should capture intermediate shape state."""
+        playground = ShapePlayground()
+        shape = DataFrameShape(rows=1_000_000, avg_row_size_bytes=100, partitions=200)
+        
+        operations = [
+            {"type": "filter", "selectivity": 0.5},
+            {"type": "groupby", "num_groups": 100},
+        ]
+        
+        result = playground.simulate_chain(shape, operations)
+        
+        # Should have one step per operation
+        assert len(result.steps) == 2
+        
+        # First step: filter reduces rows
+        filter_step = result.steps[0]
+        assert filter_step.operation_type == "filter"
+        assert filter_step.output_shape.rows == 500_000  # 50% selectivity
+        assert filter_step.input_shape.rows == 1_000_000
+        
+        # Second step: groupby on filtered data
+        groupby_step = result.steps[1]
+        assert groupby_step.operation_type == "groupby"
+        assert groupby_step.input_shape.rows == 500_000  # Input from previous step
+        assert groupby_step.is_stage_boundary is True
+
+    def test_step_includes_spark_decision_explanation(self) -> None:
+        """Each step should explain WHY Spark made a decision."""
+        playground = ShapePlayground()
+        shape = DataFrameShape(rows=1_000_000, avg_row_size_bytes=100, partitions=200)
+        
+        operations = [
+            {"type": "join", "right_rows": 500, "join_type": "inner"},
+        ]
+        
+        result = playground.simulate_chain(shape, operations)
+        
+        join_step = result.steps[0]
+        
+        # Step should include Spark's decision process
+        assert hasattr(join_step, "spark_decision")
+        assert join_step.spark_decision is not None
+        assert "broadcast" in join_step.spark_decision.lower() or "shuffle" in join_step.spark_decision.lower()
+        
+        # Should explain the threshold check
+        assert "threshold" in join_step.spark_decision.lower() or "size" in join_step.spark_decision.lower()
+
+    def test_shuffle_boundary_detection_in_steps(self) -> None:
+        """Steps should clearly mark shuffle boundaries."""
+        playground = ShapePlayground()
+        shape = DataFrameShape(rows=1_000_000, avg_row_size_bytes=100, partitions=200)
+        
+        operations = [
+            {"type": "filter", "selectivity": 0.8},  # Narrow
+            {"type": "groupby", "num_groups": 1000},  # Wide (shuffle)
+            {"type": "filter", "selectivity": 0.5},  # Narrow again
+        ]
+        
+        result = playground.simulate_chain(shape, operations)
+        
+        assert len(result.steps) == 3
+        
+        # First filter: narrow, no stage boundary
+        assert result.steps[0].is_stage_boundary is False
+        assert result.steps[0].shuffle_bytes == 0
+        
+        # GroupBy: wide, creates stage boundary
+        assert result.steps[1].is_stage_boundary is True
+        assert result.steps[1].shuffle_bytes > 0
+        
+        # Second filter: narrow, no stage boundary
+        assert result.steps[2].is_stage_boundary is False
+        assert result.steps[2].shuffle_bytes == 0
+
+    def test_step_partition_state_evolution(self) -> None:
+        """Steps should show how partition count/size evolves."""
+        playground = ShapePlayground()
+        shape = DataFrameShape(rows=1_000_000, avg_row_size_bytes=100, partitions=200)
+        
+        operations = [
+            {"type": "filter", "selectivity": 0.1},  # Reduces size but keeps partitions
+            {"type": "repartition", "new_partitions": 100},  # Changes partition count
+        ]
+        
+        result = playground.simulate_chain(shape, operations)
+        
+        filter_step = result.steps[0]
+        # Filter preserves partition count
+        assert filter_step.output_shape.partitions == 200
+        # But reduces data
+        assert filter_step.output_shape.rows == 100_000
+        
+        repartition_step = result.steps[1]
+        # Repartition changes partition count
+        assert repartition_step.output_shape.partitions == 100
+        assert repartition_step.is_stage_boundary is True
+
+    def test_step_includes_operation_result(self) -> None:
+        """Each step should include full SimulationResult for details."""
+        playground = ShapePlayground()
+        shape = DataFrameShape(rows=1_000_000, avg_row_size_bytes=100, partitions=200)
+        
+        operations = [
+            {"type": "groupby", "num_groups": 100},
+        ]
+        
+        result = playground.simulate_chain(shape, operations)
+        
+        step = result.steps[0]
+        
+        # Should have full result attached
+        assert step.result is not None
+        assert step.result.confidence in ["high", "medium", "low"]
+        assert step.result.spark_path_explanation is not None
+        assert step.result.dominant_factor is not None

@@ -19,6 +19,7 @@ import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { Operation } from './OperationsBuilder';
 import type { DataShape } from './DataShapePanel';
+import { DataFlowAnimation } from './DataFlowAnimation';
 
 // Visual grammar colors (CSS variables fallback)
 const COLORS = {
@@ -57,6 +58,10 @@ interface ExecutionDAGProps {
   reactionType?: 'shuffle' | 'broadcast' | 'skew' | 'spill' | null;
   /** Called when reaction animation completes */
   onReactionComplete?: () => void;
+  /** Whether data flow animation is active */
+  isAnimationActive?: boolean;
+  /** Animation speed mode */
+  animationSpeed?: 'slow' | 'fast';
 }
 
 // Determine if an operation causes a shuffle
@@ -255,6 +260,8 @@ function StageBoundary({ stageNumber }: { stageNumber: number }) {
 export function ExecutionDAG({
   operations,
   shape,
+  isAnimationActive = false,
+  animationSpeed = 'slow',
   className = '',
   isReacting = false,
   reactionType,
@@ -325,6 +332,16 @@ export function ExecutionDAG({
       data-reacting={isReacting}
       data-reaction-type={reactionType}
     >
+      {/* Data Flow Animation Overlay */}
+      {isAnimationActive && (
+        <DataFlowAnimation
+          operations={operations}
+          shape={shape}
+          isActive={isAnimationActive}
+          speed={animationSpeed}
+        />
+      )}
+      
       <AnimatePresence mode="popLayout">
         {nodes.map((node, index) => {
           const showStageBoundary = node.stage > currentStage && currentStage >= 0;

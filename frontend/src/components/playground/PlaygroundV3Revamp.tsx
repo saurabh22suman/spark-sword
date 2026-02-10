@@ -25,7 +25,7 @@
 
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { DataShapePanel, type DataShape } from './DataShapePanel';
@@ -33,6 +33,8 @@ import { OperationsBuilder, type Operation } from './OperationsBuilder';
 import { OperationControls } from './OperationControls';
 import { ExecutionDAG } from './ExecutionDAG';
 import { PartitionBars } from './PartitionBars';
+import { DraggablePartitionBars } from './DraggablePartitionBars';
+import { buildShareableUrl } from '@/lib/url-state';
 import { 
   PredictionPrompt, 
   SparkReactionAnimation, 
@@ -42,18 +44,27 @@ import {
   type SparkReactionType,
   type PredictionType,
 } from './prediction';
+import { PredictionQuiz } from './prediction/PredictionQuiz';
+import { ExecutionStepper, type ExecutionStep } from './ExecutionStepper';
 import { 
   useScenarioBridge, 
   ScenarioContext,
   SCENARIO_BRIDGE_CONFIG 
 } from './ScenarioBridge';
 import { HypothesisPrompt, ScenarioHeader, ExitWarningModal } from './HypothesisPrompt';
+import { ChallengeMode, type Challenge } from './ChallengeMode';
+import { ValidationWarningsPanel } from './ValidationWarningsPanel';
+import { validatePlaygroundState } from './ValidationWarnings';
+import { ExampleGallery } from './ExampleGallery';
+import { HoverSyncProvider } from './HoverSyncContext';
 import { cn } from '@/lib/utils';
 
 interface PlaygroundV3Props {
   className?: string;
   initialScenario?: string;
   initialIntentOperations?: Operation[];
+  initialShape?: DataShape;
+  initialOperations?: Operation[];
 }
 
 // Default shape - total size is primary mental model
@@ -80,6 +91,61 @@ interface PredictionTrigger {
   question: string;
   options: PredictionOption[];
   expectedOutcome: SparkReactionType;
+}
+
+// Generate Spark decision explanation for a specific operation step
+function generateSparkDecisionForStep(
+  operationType: string,
+  inputShape: { rows: number; partitions: number; totalSizeBytes: number; skewFactor: number },
+  outputShape: { rows: number; partitions: number; totalSizeBytes: number; skewFactor: number },
+  shuffleBytes: number,
+  params: Record<string, number | string | boolean>
+): string {
+  const sizeMB = (size: number) => (size / 1_000_000).toFixed(1);
+  
+  switch (operationType) {
+    case 'filter':
+      const reductionPct = ((1 - outputShape.rows / inputShape.rows) * 100).toFixed(1);
+      return `Filter is a narrow transformation - each partition processes independently. Reduced data by ${reductionPct}%, keeping ${outputShape.partitions} partitions. No shuffle needed.`;
+    
+    case 'groupby':
+      return `GroupBy requires colocating rows with same keys. Spark triggers shuffle of ${sizeMB(shuffleBytes)} MB across ${outputShape.partitions} partitions, creating a stage boundary.`;
+    
+    case 'join':
+      if (shuffleBytes === 0) {
+        return `Join uses Broadcast Hash Join. Right table (${sizeMB(params.right_rows as number * 100)} MB) is below broadcast threshold, so Spark broadcasts it to all executors to avoid shuffle.`;
+      } else {
+        return `Join uses Sort-Merge Join. Right table is too large for broadcast, so Spark shuffles ${sizeMB(shuffleBytes)} MB to colocate matching keys.`;
+      }
+    
+    case 'repartition':
+      return `Repartition changes partition count from ${inputShape.partitions} to ${outputShape.partitions}. Requires full shuffle of ${sizeMB(shuffleBytes)} MB to redistribute data evenly.`;
+    
+    case 'coalesce':
+      return `Coalesce reduces partitions from ${inputShape.partitions} to ${outputShape.partitions} by combining existing partitions. No shuffle required (narrow transformation).`;
+    
+    case 'window':
+      if (shuffleBytes > 0) {
+        return `Window function with PARTITION BY requires grouping data. Spark shuffles ${sizeMB(shuffleBytes)} MB to colocate partition keys.`;
+      } else {
+        return `Window function without PARTITION BY processes each partition independently. No shuffle needed.`;
+      }
+    
+    case 'distinct':
+      return `Distinct requires finding duplicates across partitions. Spark shuffles ${sizeMB(shuffleBytes)} MB to identify unique rows.`;
+    
+    case 'orderby':
+      return `Global ordering requires range partitioning. Spark shuffles ${sizeMB(shuffleBytes)} MB using range partitioner to create sorted partitions.`;
+    
+    case 'cache':
+      return `Caching ${sizeMB(inputShape.totalSizeBytes)} MB in memory for faster reuse. Trade-off: saves recomputation time but consumes executor memory.`;
+    
+    case 'union':
+      return `Union concatenates DataFrames without shuffling. Resulting DataFrame has ${outputShape.partitions} partitions.`;
+    
+    default:
+      return `Operation: ${operationType}`;
+  }
 }
 
 // Determine if we need to trigger a prediction
@@ -154,7 +220,13 @@ type FlowState =
   | 'reacting'       // Spark reaction animating
   | 'explaining';    // Showing explanation
 
-export function PlaygroundV3({ className = '', initialScenario, initialIntentOperations }: PlaygroundV3Props) {
+export function PlaygroundV3Revamp({ 
+  className = '', 
+  initialScenario, 
+  initialIntentOperations,
+  initialShape,
+  initialOperations,
+}: PlaygroundV3Props) {
   const reduceMotion = useReducedMotion();
   const router = useRouter();
   
@@ -173,11 +245,21 @@ export function PlaygroundV3({ className = '', initialScenario, initialIntentOpe
     getValueBounds,
   } = scenarioBridge;
   
-  // Core state
-  const [shape, setShape] = useState<DataShape>(DEFAULT_SHAPE);
-  const [operations, setOperations] = useState<Operation[]>([]);
+  // Core state - use URL-loaded state if provided, otherwise defaults
+  const [shape, setShape] = useState<DataShape>(initialShape || DEFAULT_SHAPE);
+  const [operations, setOperations] = useState<Operation[]>(initialOperations || []);
   const [selectedOperationId, setSelectedOperationId] = useState<string | null>(null);
   const [mode, setMode] = useState<PlaygroundMode>('learning');
+  
+  // Challenge mode state
+  const [challengeMode, setChallengeMode] = useState<boolean>(false);
+  const [activeChallenge, setActiveChallenge] = useState<Challenge | null>(null);
+  
+  // Example gallery state
+  const [showExampleGallery, setShowExampleGallery] = useState<boolean>(false);
+  
+  // Validation warnings
+  const validationWarnings = validatePlaygroundState(operations, shape, mode === 'learning');
   
   // Flow state
   const [flowState, setFlowState] = useState<FlowState>('exploring');
@@ -193,6 +275,19 @@ export function PlaygroundV3({ className = '', initialScenario, initialIntentOpe
   
   // Scenario loading state
   const [scenarioLoading, setScenarioLoading] = useState(false);
+  
+  // Enhanced features state
+  const [showExecutionStepper, setShowExecutionStepper] = useState(false);
+  const [executionSteps, setExecutionSteps] = useState<ExecutionStep[]>([]);
+  const [showEnhancedQuiz, setShowEnhancedQuiz] = useState(false);
+  const [quizQuestion, setQuizQuestion] = useState<string>('');
+  const [quizOptions, setQuizOptions] = useState<Array<{id: string; label: string}>>([]);
+  const [quizAnswer, setQuizAnswer] = useState<string>('');
+  const [quizExplanation, setQuizExplanation] = useState<string>('');
+  
+  // Data flow animation state
+  const [isAnimationActive, setIsAnimationActive] = useState(false);
+  const [animationSpeed, setAnimationSpeed] = useState<'slow' | 'fast'>('slow');
   
   const selectedOperation = operations.find(op => op.id === selectedOperationId);
   
@@ -325,10 +420,161 @@ export function PlaygroundV3({ className = '', initialScenario, initialIntentOpe
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [operations, shape, mode, flowState]);
   
+  // Sync state to URL for shareable links (debounced 500ms)
+  useEffect(() => {
+    // Skip if in scenario mode or loading initial state
+    if (isScenarioMode || initialScenario) return;
+    
+    const timeoutId = setTimeout(() => {
+      const url = buildShareableUrl('/playground', {
+        shape,
+        operations,
+        mode,
+      });
+      
+      // Update URL without navigation (replaceState)
+      window.history.replaceState({}, '', url);
+    }, 500); // Debounce
+    
+    return () => clearTimeout(timeoutId);
+  }, [shape, operations, mode, isScenarioMode, initialScenario]);
+  
+  // Generate execution steps for stepper visualization
+  useEffect(() => {
+    if (operations.length === 0) {
+      setExecutionSteps([]);
+      return;
+    }
+    
+    const steps: ExecutionStep[] = [];
+    let currentRows = shape.rows;
+    let currentSize = shape.totalSizeBytes;
+    let currentPartitions = shape.partitions;
+    let currentSkew = shape.skewFactor;
+    
+    const SHUFFLE_OPS = ['groupby', 'join', 'repartition', 'orderby', 'distinct', 'window'];
+    
+    for (const op of operations) {
+      const inputShape = {
+        rows: currentRows,
+        partitions: currentPartitions,
+        totalSizeBytes: currentSize,
+        skewFactor: currentSkew,
+      };
+      
+      let outputRows = currentRows;
+      let outputSize = currentSize;
+      let outputPartitions = currentPartitions;
+      let shuffleBytes = 0;
+      const isStageBoundary = SHUFFLE_OPS.includes(op.type);
+      
+      // Simulate operation effects
+      switch (op.type) {
+        case 'filter':
+          const selectivity = (op.params.selectivity as number) || 0.5;
+          outputRows = Math.floor(currentRows * selectivity);
+          outputSize = Math.floor(currentSize * selectivity);
+          break;
+        case 'groupby':
+          shuffleBytes = currentSize;
+          outputRows = (op.params.num_groups as number) || 1000;
+          break;
+        case 'join':
+          const rightRows = (op.params.right_rows as number) || 100000;
+          const rightSize = rightRows * shape.avgRowSizeBytes;
+          const threshold = (op.params.broadcast_threshold as number) || 10 * 1024 * 1024;
+          if (rightSize > threshold) {
+            shuffleBytes = currentSize + rightSize;
+          }
+          outputRows = Math.min(currentRows, rightRows);
+          break;
+        case 'repartition':
+          shuffleBytes = currentSize;
+          outputPartitions = (op.params.new_partitions as number) || 200;
+          break;
+        case 'coalesce':
+          outputPartitions = (op.params.new_partitions as number) || 50;
+          break;
+        case 'distinct':
+          shuffleBytes = currentSize;
+          const dupRatio = (op.params.duplicates_ratio as number) || 0.1;
+          outputRows = Math.floor(currentRows * (1 - dupRatio));
+          break;
+        case 'window':
+        case 'orderby':
+          shuffleBytes = currentSize;
+          break;
+        case 'union':
+          const otherRows = (op.params.other_rows as number) || currentRows;
+          outputRows = currentRows + otherRows;
+          outputSize = currentSize + otherRows * shape.avgRowSizeBytes;
+          break;
+      }
+      
+      // Generate Spark decision explanation
+      const sparkDecision = generateSparkDecisionForStep(op.type, inputShape, {
+        rows: outputRows,
+        partitions: outputPartitions,
+        totalSizeBytes: outputSize,
+        skewFactor: currentSkew,
+      }, shuffleBytes, op.params);
+      
+      steps.push({
+        operationType: op.type,
+        inputShape,
+        outputShape: {
+          rows: outputRows,
+          partitions: outputPartitions,
+          totalSizeBytes: outputSize,
+          skewFactor: currentSkew,
+        },
+        shuffleBytes,
+        isStageBoundary,
+        sparkDecision,
+      });
+      
+      currentRows = outputRows;
+      currentSize = outputSize;
+      currentPartitions = outputPartitions;
+    }
+    
+    setExecutionSteps(steps);
+  }, [shape, operations]);
+  
   // Handle prediction selection
   const handlePredictionSelect = useCallback((prediction: PredictionType) => {
     setSelectedPrediction(prediction);
   }, []);
+  
+  // Share handler - copies URL to clipboard
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
+  const handleShare = useCallback(async () => {
+    const url = buildShareableUrl('/playground', {
+      shape,
+      operations,
+      mode,
+      scenarioId: initialScenario,
+    });
+    
+    const fullUrl = `${window.location.origin}${url}`;
+    
+    try {
+      await navigator.clipboard.writeText(fullUrl);
+      setShowCopiedToast(true);
+      setTimeout(() => setShowCopiedToast(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+      // Fallback: select the URL in a temporary input
+      const input = document.createElement('input');
+      input.value = fullUrl;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      setShowCopiedToast(true);
+      setTimeout(() => setShowCopiedToast(false), 2000);
+    }
+  }, [shape, operations, mode, initialScenario]);
   
   // Handle prediction commit
   const handlePredictionCommit = useCallback(() => {
@@ -437,15 +683,16 @@ export function PlaygroundV3({ className = '', initialScenario, initialIntentOpe
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className={cn("space-y-4", className)}
-      data-testid="playground-v3"
-      data-flow-state={flowState}
-      data-mode={mode}
-      data-scenario-mode={isScenarioMode}
-    >
+    <HoverSyncProvider>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className={cn("space-y-4", className)}
+        data-testid="playground-v3"
+        data-flow-state={flowState}
+        data-mode={mode}
+        data-scenario-mode={isScenarioMode}
+      >
       {/* Exit Warning Modal */}
       <ExitWarningModal 
         isOpen={showExitWarning}
@@ -489,25 +736,74 @@ export function PlaygroundV3({ className = '', initialScenario, initialIntentOpe
           >
             {mode === 'learning' ? '📚 Learning' : '⚡ Expert'}
           </button>
+          
+          {/* Challenge Mode Toggle */}
+          <button
+            onClick={() => setChallengeMode(!challengeMode)}
+            className={cn(
+              "relative px-4 py-1.5 text-xs font-semibold rounded-full transition-all",
+              challengeMode
+                ? 'bg-green-50 dark:bg-green-500/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/30' 
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+            )}
+            data-testid="challenge-mode-toggle"
+          >
+            🎯 {challengeMode ? 'Challenge On' : 'Challenge Off'}
+          </button>
         </div>
         
-        {/* Global Controls */}
-        <div className="flex items-center gap-2">
+        {/* Share Button */}
+        <div className="relative">
           <button
-            onClick={saveSnapshot}
-            className="px-3 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-colors border border-slate-200 dark:border-transparent"
-            data-testid="save-snapshot"
+            onClick={handleShare}
+            className="flex items-center gap-2 px-4 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-colors"
+            data-testid="share-button"
           >
-            📌 Snapshot
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+            Share
           </button>
-          <button
-            onClick={isScenarioMode ? handleScenarioReset : handleGlobalReset}
-            className="px-3 py-1.5 text-xs bg-slate-100 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-900/50 text-slate-700 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-300 rounded-lg transition-colors border border-slate-200 dark:border-transparent"
-            data-testid="global-reset"
-          >
-            🔄 Reset
-          </button>
+          
+          {/* Copied Toast */}
+          <AnimatePresence>
+            {showCopiedToast && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="absolute top-full mt-2 right-0 px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg shadow-lg whitespace-nowrap"
+              >
+                ✓ Link copied to clipboard
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+      </div>
+        
+      {/* Global Controls */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setShowExampleGallery(true)}
+          className="px-3 py-1.5 text-xs bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg transition-colors border border-blue-200 dark:border-blue-900/30"
+          data-testid="open-gallery"
+        >
+          📚 Examples
+        </button>
+        <button
+          onClick={saveSnapshot}
+          className="px-3 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-colors border border-slate-200 dark:border-transparent"
+          data-testid="save-snapshot"
+        >
+          📌 Snapshot
+        </button>
+        <button
+          onClick={isScenarioMode ? handleScenarioReset : handleGlobalReset}
+          className="px-3 py-1.5 text-xs bg-slate-100 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-900/50 text-slate-700 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-300 rounded-lg transition-colors border border-slate-200 dark:border-transparent"
+          data-testid="global-reset"
+        >
+          🔄 Reset
+        </button>
       </div>
 
       {/* Disclaimer */}
@@ -531,6 +827,26 @@ export function PlaygroundV3({ className = '', initialScenario, initialIntentOpe
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* === CHALLENGE MODE === */}
+      {!isScenarioMode && challengeMode && (
+        <ChallengeMode
+          isEnabled={challengeMode}
+          currentOperations={operations}
+          currentShape={shape}
+          onChallengeSelect={(challenge) => {
+            setActiveChallenge(challenge);
+            if (challenge) {
+              // Apply initial state if challenge specifies it
+              if (challenge.initialShape) {
+                setShape(prev => ({ ...prev, ...challenge.initialShape }));
+              }
+            }
+          }}
+          onReset={handleGlobalReset}
+          isLearningMode={mode === 'learning'}
+        />
+      )}
 
       {/* === ZONE 1: Global Data Shape (Top) === */}
       <div className={cn(
@@ -559,12 +875,25 @@ export function PlaygroundV3({ className = '', initialScenario, initialIntentOpe
           expertMode={mode === 'expert'}
         />
         
+        {/* Real-time Validation Warnings */}
+        {validationWarnings.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+            <ValidationWarningsPanel
+              warnings={validationWarnings}
+              isLearningMode={mode === 'learning'}
+            />
+          </div>
+        )}
+        
         {/* Partition Distribution Visualization */}
         <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-          <PartitionBars 
+          <DraggablePartitionBars 
             partitions={shape.partitions}
             skewFactor={shape.skewFactor}
             avgPartitionSizeBytes={shape.totalSizeBytes / shape.partitions}
+            onSkewChange={(newSkew) => {
+              setShape(prev => ({ ...prev, skewFactor: newSkew }));
+            }}
           />
         </div>
       </div>
@@ -600,6 +929,7 @@ export function PlaygroundV3({ className = '', initialScenario, initialIntentOpe
                 <OperationControls
                   operation={selectedOperation}
                   onChange={updateOperation}
+                  inputRows={shape.rows}
                 />
               </motion.div>
             )}
@@ -610,33 +940,83 @@ export function PlaygroundV3({ className = '', initialScenario, initialIntentOpe
         <div className="lg:col-span-2 p-5 bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 min-h-[400px]">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-widest">
-              Execution DAG
+              {showExecutionStepper ? 'Step-by-Step Execution' : 'Execution DAG'}
             </h3>
-            {operations.length > 0 && (
-              <div className="flex items-center gap-3 text-xs text-slate-700 dark:text-slate-400">
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-blue-500" /> Normal
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-orange-500" /> Shuffle
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-purple-500" /> Broadcast
-                </span>
+            <div className="flex items-center gap-3">
+              {/* View toggle */}
+              {operations.length > 0 && (
+                <button
+                  onClick={() => setShowExecutionStepper(!showExecutionStepper)}
+                  className="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-colors"
+                  data-testid="toggle-stepper"
+                >
+                  {showExecutionStepper ? '📊 Show DAG' : '👣 Step Through'}
+                </button>
+              )}
+              {operations.length > 0 && !showExecutionStepper && (
+                <div className="flex items-center gap-3 text-xs text-slate-700 dark:text-slate-400">
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-blue-500" /> Normal
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-orange-500" /> Shuffle
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-purple-500" /> Broadcast
+                  </span>
+                </div>
+              )}
+              
+              {/* Animation controls - always visible but disabled when no ops */}
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  onClick={() => setIsAnimationActive(!isAnimationActive)}
+                  disabled={operations.length === 0}
+                  data-testid="animation-toggle"
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                    operations.length === 0
+                      ? "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed"
+                      : isAnimationActive
+                        ? "bg-blue-500 text-white shadow-lg shadow-blue-500/30"
+                        : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"
+                  )}
+                  title={operations.length === 0 ? "Add operations to animate" : "Toggle data flow animation"}
+                >
+                  {isAnimationActive ? '⏸️ Stop Animation' : '▶️ Animate Flow'}
+                </button>
+                
+                {isAnimationActive && operations.length > 0 && (
+                  <button
+                    onClick={() => setAnimationSpeed(animationSpeed === 'slow' ? 'fast' : 'slow')}
+                    data-testid="animation-speed-toggle"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition-all"
+                    title={`Switch to ${animationSpeed === 'slow' ? 'fast' : 'slow'} mode`}
+                  >
+                    {animationSpeed === 'slow' ? '🐌 Slow' : '⚡ Fast'}
+                  </button>
+                )}
               </div>
-            )}
+            </div>
           </div>
           
-          <ExecutionDAG
-            operations={operations}
-            shape={shape}
-            isReacting={flowState === 'reacting'}
-            reactionType={predictionTrigger?.expectedOutcome === 'shuffle' ? 'shuffle' 
-              : predictionTrigger?.expectedOutcome === 'broadcast' ? 'broadcast'
-              : predictionTrigger?.expectedOutcome === 'skew' ? 'skew'
-              : null}
-            onReactionComplete={handleReactionComplete}
-          />
+          {showExecutionStepper && executionSteps.length > 0 ? (
+            <ExecutionStepper
+              steps={executionSteps}
+              isVisible={true}
+            />
+          ) : (
+            <ExecutionDAG
+              operations={operations}
+              shape={shape}
+              isReacting={flowState === 'reacting'}
+              reactionType={predictionTrigger?.expectedOutcome === 'shuffle' ? 'shuffle' 
+                : predictionTrigger?.expectedOutcome === 'broadcast' ? 'broadcast'
+                : predictionTrigger?.expectedOutcome === 'skew' ? 'skew'
+                : null}
+              onReactionComplete={handleReactionComplete}
+            />
+          )}
         </div>
       </div>
 
@@ -744,7 +1124,21 @@ export function PlaygroundV3({ className = '', initialScenario, initialIntentOpe
           </div>
         )}
       </div>
+      
+      {/* Example Gallery */}
+      <ExampleGallery
+        isOpen={showExampleGallery}
+        onClose={() => setShowExampleGallery(false)}
+        onLoadExample={(exampleShape, exampleOperations) => {
+          // Load example into playground
+          setShape(prev => ({ ...prev, ...exampleShape }));
+          setOperations(exampleOperations);
+          setSelectedOperationId(null);
+        }}
+        hasCurrentWork={operations.length > 0}
+      />
     </motion.div>
+    </HoverSyncProvider>
   );
 }
 
@@ -757,4 +1151,4 @@ function formatBytes(bytes: number): string {
   return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 }
 
-export default PlaygroundV3;
+export default PlaygroundV3Revamp;

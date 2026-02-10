@@ -9,10 +9,12 @@
 'use client';
 
 import type { Operation } from './OperationsBuilder';
+import { SelectivityScrubber } from './SelectivityScrubber';
 
 interface OperationControlsProps {
   operation: Operation;
   onChange: (operation: Operation) => void;
+  inputRows?: number; // For showing impact of operations
   className?: string;
 }
 
@@ -136,7 +138,7 @@ function formatNumber(num: number): string {
   return num.toString();
 }
 
-export function OperationControls({ operation, onChange, className = '' }: OperationControlsProps) {
+export function OperationControls({ operation, onChange, inputRows, className = '' }: OperationControlsProps) {
   const updateParam = (key: string, value: number | string | boolean) => {
     onChange({
       ...operation,
@@ -148,15 +150,10 @@ export function OperationControls({ operation, onChange, className = '' }: Opera
     switch (operation.type) {
       case 'filter':
         return (
-          <SliderControl
-            label="Selectivity"
+          <SelectivityScrubber
             value={operation.params.selectivity as number}
             onChange={(v) => updateParam('selectivity', v)}
-            min={0.01}
-            max={1}
-            step={0.01}
-            format={(v) => `${(v * 100).toFixed(0)}%`}
-            description="Fraction of rows that pass the filter"
+            inputRows={inputRows}
           />
         );
 

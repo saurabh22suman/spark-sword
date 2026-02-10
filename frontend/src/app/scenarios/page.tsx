@@ -314,6 +314,9 @@ export default function ScenariosPage() {
   useEffect(() => {
     if (!selectedId) return;
     
+    // Scroll to top when scenario changes (especially for mobile)
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     fetch(`${API_BASE}/api/scenarios/${selectedId}`)
       .then(res => res.json())
       .then(setSelectedScenario)

@@ -123,13 +123,18 @@ class SimulationResult:
 
 @dataclass
 class ChainStep:
-    """A single step in an operation chain."""
+    """A single step in an operation chain.
+    
+    Captures intermediate state for step-by-step execution visualization.
+    Includes Spark's decision process for educational purposes.
+    """
     operation_type: str
     input_shape: DataFrameShape
     output_shape: DataFrameShape
     shuffle_bytes: int = 0
     is_stage_boundary: bool = False
     result: Optional[SimulationResult] = None
+    spark_decision: str = ""  # Explains WHY Spark made this choice
 
 
 @dataclass
@@ -839,6 +844,118 @@ class ShapePlayground:
         
         return result
 
+    def _build_step_decision_explanation(
+        self,
+        operation_type: str,
+        result: SimulationResult,
+        input_shape: DataFrameShape,
+        output_shape: DataFrameShape,
+    ) -> str:
+        """Build step-by-step explanation of Spark's decision process.
+        
+        This creates educational explanations showing Spark's "thought process"
+        for each operation, helping users understand WHY decisions were made.
+        
+        Args:
+            operation_type: Type of operation (filter, join, groupby, etc.)
+            result: SimulationResult containing decision details
+            input_shape: Shape before operation
+            output_shape: Shape after operation
+            
+        Returns:
+            Human-readable explanation of Spark's decision
+        """
+        # Use the existing spark_path_explanation as base
+        base_explanation = result.spark_path_explanation
+        
+        # Add step-specific context
+        if operation_type == "join":
+            if result.broadcast_bytes > 0:
+                right_size_mb = result.broadcast_bytes / 1_000_000
+                threshold_mb = ShapePlayground.DEFAULT_BROADCAST_THRESHOLD / 1_000_000
+                return (
+                    f"Checking join strategy... Right table is {right_size_mb:.1f}MB. "
+                    f"Since this is below broadcast threshold ({threshold_mb:.1f}MB), "
+                    f"Spark chooses Broadcast Hash Join to avoid shuffle."
+                )
+            else:
+                threshold_mb = ShapePlayground.DEFAULT_BROADCAST_THRESHOLD / 1_000_000
+                return (
+                    f"Checking join strategy... Right table is too large for broadcast "
+                    f"(>{threshold_mb:.1f}MB). "
+                    f"Spark chooses Sort-Merge Join, which requires shuffle of "
+                    f"{result.shuffle_bytes / 1_000_000:.1f}MB."
+                )
+        
+        elif operation_type == "groupby":
+            return (
+                f"GroupBy requires colocating rows with same keys. "
+                f"Spark triggers shuffle of {result.shuffle_bytes / 1_000_000:.1f}MB "
+                f"across {output_shape.partitions} partitions, creating a stage boundary."
+            )
+        
+        elif operation_type == "filter":
+            reduction_pct = (1 - output_shape.rows / input_shape.rows) * 100 if input_shape.rows > 0 else 0
+            return (
+                f"Filter is a narrow transformation - each partition processes independently. "
+                f"Reduced data by {reduction_pct:.1f}%, keeping {output_shape.partitions} partitions. "
+                f"No shuffle needed."
+            )
+        
+        elif operation_type == "repartition":
+            return (
+                f"Repartition changes partition count from {input_shape.partitions} to {output_shape.partitions}. "
+                f"Requires full shuffle of {result.shuffle_bytes / 1_000_000:.1f}MB to redistribute data evenly."
+            )
+        
+        elif operation_type == "coalesce":
+            return (
+                f"Coalesce reduces partitions from {input_shape.partitions} to {output_shape.partitions} "
+                f"by combining existing partitions. No shuffle required (narrow transformation)."
+            )
+        
+        elif operation_type == "window":
+            if result.shuffle_bytes > 0:
+                return (
+                    f"Window function with PARTITION BY requires grouping data. "
+                    f"Spark shuffles {result.shuffle_bytes / 1_000_000:.1f}MB to colocate partition keys."
+                )
+            else:
+                return (
+                    f"Window function without PARTITION BY processes each partition independently. "
+                    f"No shuffle needed."
+                )
+        
+        elif operation_type == "distinct":
+            return (
+                f"Distinct requires finding duplicates across partitions. "
+                f"Spark shuffles {result.shuffle_bytes / 1_000_000:.1f}MB to identify unique rows."
+            )
+        
+        elif operation_type == "orderby":
+            return (
+                f"Global ordering requires range partitioning. "
+                f"Spark shuffles {result.shuffle_bytes / 1_000_000:.1f}MB using range partitioner "
+                f"to create sorted partitions."
+            )
+        
+        elif operation_type == "cache":
+            storage_mb = result.cache_memory_bytes / 1_000_000
+            return (
+                f"Caching {storage_mb:.1f}MB in memory for faster reuse. "
+                f"Trade-off: saves recomputation time but consumes executor memory."
+            )
+        
+        elif operation_type == "union":
+            return (
+                f"Union concatenates DataFrames without shuffling. "
+                f"Resulting DataFrame has {output_shape.partitions} partitions "
+                f"({input_shape.partitions} from each side)."
+            )
+        
+        # Fallback to base explanation
+        return base_explanation
+
     def simulate_chain(
         self,
         input_shape: DataFrameShape,
@@ -928,6 +1045,11 @@ class ShapePlayground:
                     current_stage += 1
                     stage_count += 1
                 
+                # Build Spark decision explanation for step-by-step mode
+                spark_decision = self._build_step_decision_explanation(
+                    op_type, result, current_shape, result.output_shape
+                )
+                
                 step = ChainStep(
                     operation_type=op_type,
                     input_shape=current_shape,
@@ -935,6 +1057,7 @@ class ShapePlayground:
                     shuffle_bytes=result.shuffle_bytes,
                     is_stage_boundary=is_stage_boundary,
                     result=result,
+                    spark_decision=spark_decision,
                 )
                 steps.append(step)
                 
